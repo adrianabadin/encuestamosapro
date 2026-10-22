@@ -21,6 +21,7 @@ export function flattenSurveyResponseRow(r: StoredSurveyResponse): Record<string
   return {
     ID: r.id,
     Submission_UUID: r.clientSubmissionId,
+    Estado_Encuesta: r.isComplete ? "Completa" : `En curso (${r.currentStep})`,
     Plataforma: r.sourcePlatform,
     Fecha_Carga: r.createdAtClient || r.syncedAt,
     Fecha_Sincronizacion: r.syncedAt,
@@ -38,6 +39,10 @@ export function flattenSurveyResponseRow(r: StoredSurveyResponse): Record<string
     S2C_Tipo_Organizacion_Otra: p.section2C?.tipoOrganizacionOtra || "",
     S2C_Rol_Comunitario: p.section2C?.rol || "",
     S2C_Rol_Otro: p.section2C?.rolOtro || "",
+    S2D_Ambito_Gestion: p.section2D?.ambitoGestion || "",
+    S2D_Rol_Gestion: p.section2D?.rolGestion || "",
+    S2D_Rol_Gestion_Otra: p.section2D?.rolGestionOtra || "",
+    S2D_Area_O_Direccion: p.section2D?.areaEspacio || "",
     Prioridad_1_Tematica: prio(1),
     Prioridad_1_Problema: p.section4?.rank1Detail?.problema || "",
     Prioridad_1_Propuesta: p.section4?.rank1Detail?.propuesta || "",

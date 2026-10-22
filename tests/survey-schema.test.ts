@@ -70,9 +70,29 @@ describe("Default Survey Schema & 13 Themes (S3, S4, S5, S6, S7, S8)", () => {
     );
   });
 
-  it("includes Sections 0, 1, 2A, 2B, 2C, 3, 4, 5 with exact prompts", () => {
+  it("includes Sections 0, 1, 2A, 2B, 2C, 2D, 3, 4, 5 with exact prompts", () => {
     const sectionIds = DEFAULT_SURVEY_SCHEMA.sections.map((s) => s.id);
-    expect(sectionIds).toEqual(["S0", "S1", "S2A", "S2B", "S2C", "S3", "S4", "S5"]);
+    expect(sectionIds).toEqual([
+      "S0",
+      "S1",
+      "S2A",
+      "S2B",
+      "S2C",
+      "S2D",
+      "S3",
+      "S4",
+      "S5",
+    ]);
+  });
+
+  it("includes 'gestion_sanitaria' in Section 1 and 'nacional', 'provincial', 'municipal' in 2B", () => {
+    const s1 = DEFAULT_SURVEY_SCHEMA.sections.find((s) => s.id === "S1")!;
+    const s1Values = s1.questions[0].options?.map((o) => o.value) || [];
+    expect(s1Values).toContain("gestion_sanitaria");
+
+    const s2b = DEFAULT_SURVEY_SCHEMA.sections.find((s) => s.id === "S2B")!;
+    const s2bHospitalTypes = s2b.questions[0].options?.map((o) => o.value) || [];
+    expect(s2bHospitalTypes).toEqual(["nacional", "provincial", "municipal"]);
   });
 });
 
@@ -202,18 +222,32 @@ describe("Survey Submission Validation Rules (S3-S8)", () => {
     expect(validateSurveySubmission(validCustom).valid).toBe(true);
   });
 
-  it("skips Section 5.2-5.5 requirement when interesaMesa is 'no' (S8)", () => {
-    const noParticipation = {
+  it("does NOT block submission when Section 4.2-4.4 problem or proposal fields are left blank (S7 update)", () => {
+    const withoutProblemText = {
       ...baseValidSubmission,
-      section5: {
-        interesaMesa: "no" as const,
-        tematicasMesa: [],
-        ofreceReferente: undefined,
-        horarios: [],
-        modalidad: undefined,
+      section4: {
+        ...baseValidSubmission.section4,
+        rank1Detail: { problema: "", propuesta: "" },
+        rank2Detail: { problema: "", propuesta: "" },
+        rank3Detail: { problema: "", propuesta: "" },
       },
     };
-    const res = validateSurveySubmission(noParticipation);
+    const res = validateSurveySubmission(withoutProblemText);
+    expect(res.valid).toBe(true);
+  });
+
+  it("accepts a valid submission for Gestión Sanitaria (Section 2D)", () => {
+    const gestionSubmission = {
+      ...baseValidSubmission,
+      mainLocation: "gestion_sanitaria" as const,
+      section2D: {
+        ambitoGestion: "provincial",
+        rolGestion: "equipo_tecnico",
+        rolGestionOtra: "",
+        areaEspacio: "Dirección de Redes",
+      },
+    };
+    const res = validateSurveySubmission(gestionSubmission);
     expect(res.valid).toBe(true);
   });
 

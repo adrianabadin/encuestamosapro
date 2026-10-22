@@ -37,9 +37,13 @@ import {
 import {
   getActiveSectionIds,
   getRankThemeLabel,
+  MainLocationType,
 } from "@/lib/survey/flow-helpers";
 import { MunicipioAutocomplete } from "./MunicipioAutocomplete";
+import { HospitalServiceCombobox } from "./HospitalServiceCombobox";
 import { PriorityGrid } from "./PriorityGrid";
+
+const ACTIVE_DRAFT_STORAGE_KEY = "mosapro_active_draft_v2";
 
 const BUILTIN_QUESTION_IDS = new Set([
   "q_consent",
@@ -50,6 +54,9 @@ const BUILTIN_QUESTION_IDS = new Set([
   "q_2b_area_servicio",
   "q_2c_tipo_org",
   "q_2c_rol",
+  "q_2d_ambito",
+  "q_2d_rol",
+  "q_2d_area",
   "q_3_region",
   "q_3_municipio",
   "q_3_antiguedad",
@@ -66,6 +73,13 @@ const BUILTIN_QUESTION_IDS = new Set([
   "q_5_modalidad",
 ]);
 
+function generateUuid(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `sub_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
 interface SurveyWizardProps {
   initialRegion?: string;
 }
@@ -73,6 +87,7 @@ interface SurveyWizardProps {
 export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
   const searchParams = useSearchParams();
   const [schema, setSchema] = useState<SurveySchema>(DEFAULT_SURVEY_SCHEMA);
+  const [submissionId, setSubmissionId] = useState<string>("");
   const [stepIndex, setStepIndex] = useState(0);
   const [declinedConsent, setDeclinedConsent] = useState(false);
   const [submittedState, setSubmittedState] = useState<{
@@ -84,25 +99,29 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
   // Form State
   const [consent, setConsent] = useState<boolean | null>(null);
-  const [mainLocation, setMainLocation] = useState<
-    "primer_nivel" | "hospital" | "comunitario" | ""
-  >("");
+  const [mainLocation, setMainLocation] = useState<MainLocationType>("");
 
   // 2A
   const [s2aTarea, setS2aTarea] = useState("");
   const [s2aTareaOtra, setS2aTareaOtra] = useState("");
 
-  // 2B
+  // 2B (Hospital)
   const [s2bTipoHospital, setS2bTipoHospital] = useState("");
   const [s2bTarea, setS2bTarea] = useState("");
   const [s2bTareaOtra, setS2bTareaOtra] = useState("");
   const [s2bAreaServicio, setS2bAreaServicio] = useState("");
 
-  // 2C
+  // 2C (Comunitario)
   const [s2cTipoOrg, setS2cTipoOrg] = useState("");
   const [s2cTipoOrgOtra, setS2cTipoOrgOtra] = useState("");
   const [s2cRol, setS2cRol] = useState("");
   const [s2cRolOtro, setS2cRolOtro] = useState("");
+
+  // 2D (Gestión Sanitaria)
+  const [s2dAmbito, setS2dAmbito] = useState("");
+  const [s2dRol, setS2dRol] = useState("");
+  const [s2dRolOtra, setS2dRolOtra] = useState("");
+  const [s2dArea, setS2dArea] = useState("");
 
   // Section 3
   const [regionSanitaria, setRegionSanitaria] = useState("");
@@ -123,16 +142,82 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
   const [relacionZonal, setRelacionZonal] = useState("");
 
   // Section 5
-  const [interesaMesa, setInteresaMesa] = useState<"si" | "no" | "tal_vez" | "">("");
+  const [interesaMesa, setInteresaMesa] = useState<"si" | "no" | "tal_vez" | "">(
+    ""
+  );
   const [tematicasMesa, setTematicasMesa] = useState<string[]>([]);
   const [ofreceReferente, setOfreceReferente] = useState<"si" | "no" | "">("");
   const [horarios, setHorarios] = useState<string[]>([]);
-  const [modalidad, setModalidad] = useState<"virtual" | "presencial" | "mixta" | "">("");
+  const [modalidad, setModalidad] = useState<
+    "virtual" | "presencial" | "mixta" | ""
+  >("");
 
   // Custom Admin Questions
   const [customAnswers, setCustomAnswers] = useState<
     Record<string, string | string[]>
   >({});
+
+  // Restore unfinished draft from localStorage or initialize a stable submissionId
+  useEffect(() => {
+    try {
+      const rawDraft = window.localStorage.getItem(ACTIVE_DRAFT_STORAGE_KEY);
+      if (rawDraft) {
+        const parsed = JSON.parse(rawDraft);
+        if (parsed && parsed.submissionId && !parsed.done) {
+          setSubmissionId(parsed.submissionId);
+          if (typeof parsed.stepIndex === "number")
+            setStepIndex(parsed.stepIndex);
+          if (typeof parsed.consent === "boolean") setConsent(parsed.consent);
+          if (parsed.mainLocation) setMainLocation(parsed.mainLocation);
+          if (parsed.s2aTarea) setS2aTarea(parsed.s2aTarea);
+          if (parsed.s2aTareaOtra) setS2aTareaOtra(parsed.s2aTareaOtra);
+          if (parsed.s2bTipoHospital)
+            setS2bTipoHospital(parsed.s2bTipoHospital);
+          if (parsed.s2bTarea) setS2bTarea(parsed.s2bTarea);
+          if (parsed.s2bTareaOtra) setS2bTareaOtra(parsed.s2bTareaOtra);
+          if (parsed.s2bAreaServicio)
+            setS2bAreaServicio(parsed.s2bAreaServicio);
+          if (parsed.s2cTipoOrg) setS2cTipoOrg(parsed.s2cTipoOrg);
+          if (parsed.s2cTipoOrgOtra) setS2cTipoOrgOtra(parsed.s2cTipoOrgOtra);
+          if (parsed.s2cRol) setS2cRol(parsed.s2cRol);
+          if (parsed.s2cRolOtro) setS2cRolOtro(parsed.s2cRolOtro);
+          if (parsed.s2dAmbito) setS2dAmbito(parsed.s2dAmbito);
+          if (parsed.s2dRol) setS2dRol(parsed.s2dRol);
+          if (parsed.s2dRolOtra) setS2dRolOtra(parsed.s2dRolOtra);
+          if (parsed.s2dArea) setS2dArea(parsed.s2dArea);
+          if (parsed.regionSanitaria)
+            setRegionSanitaria(parsed.regionSanitaria);
+          if (parsed.municipio) setMunicipio(parsed.municipio);
+          if (parsed.antiguedad) setAntiguedad(parsed.antiguedad);
+          if (Array.isArray(parsed.priorities))
+            setPriorities(parsed.priorities);
+          if (Array.isArray(parsed.customThemes))
+            setCustomThemes(parsed.customThemes);
+          if (parsed.rank1Problema) setRank1Problema(parsed.rank1Problema);
+          if (parsed.rank1Propuesta) setRank1Propuesta(parsed.rank1Propuesta);
+          if (parsed.rank2Problema) setRank2Problema(parsed.rank2Problema);
+          if (parsed.rank2Propuesta) setRank2Propuesta(parsed.rank2Propuesta);
+          if (parsed.rank3Problema) setRank3Problema(parsed.rank3Problema);
+          if (parsed.rank3Propuesta) setRank3Propuesta(parsed.rank3Propuesta);
+          if (parsed.otraTematicaAbierta)
+            setOtraTematicaAbierta(parsed.otraTematicaAbierta);
+          if (parsed.relacionZonal) setRelacionZonal(parsed.relacionZonal);
+          if (parsed.interesaMesa) setInteresaMesa(parsed.interesaMesa);
+          if (Array.isArray(parsed.tematicasMesa))
+            setTematicasMesa(parsed.tematicasMesa);
+          if (parsed.ofreceReferente)
+            setOfreceReferente(parsed.ofreceReferente);
+          if (Array.isArray(parsed.horarios)) setHorarios(parsed.horarios);
+          if (parsed.modalidad) setModalidad(parsed.modalidad);
+          if (parsed.customAnswers) setCustomAnswers(parsed.customAnswers);
+          return;
+        }
+      }
+    } catch {
+      // ignore corrupted draft
+    }
+    setSubmissionId(generateUuid());
+  }, []);
 
   // Load schema from API or local cache
   useEffect(() => {
@@ -190,141 +275,118 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     (q) => !BUILTIN_QUESTION_IDS.has(q.id)
   );
 
-  const validateCurrentStep = (): boolean => {
-    const errs: string[] = [];
-
-    if (currentSectionId === "S0") {
-      if (consent === null) {
-        errs.push("Por favor seleccioná si aceptás participar.");
-      }
-    } else if (currentSectionId === "S1") {
-      if (!mainLocation) {
-        errs.push("Seleccioná dónde realizás tu tarea principal para continuar.");
-      }
-    } else if (currentSectionId === "S2A") {
-      if (!s2aTarea) {
-        errs.push("Seleccioná tu tarea en el primer nivel.");
-      } else if (s2aTarea === "otra" && !s2aTareaOtra.trim()) {
-        errs.push("Especificá ¿Cuál? en tu tarea.");
-      }
-    } else if (currentSectionId === "S2B") {
-      if (!s2bTipoHospital) errs.push("Seleccioná el tipo de hospital.");
-      if (!s2bTarea) {
-        errs.push("Seleccioná tu tarea en el hospital.");
-      } else if (s2bTarea === "otra" && !s2bTareaOtra.trim()) {
-        errs.push("Especificá ¿Cuál? en tu tarea.");
-      }
-      if (!s2bAreaServicio.trim()) {
-        errs.push("Completá el área o servicio donde trabajás.");
-      }
-    } else if (currentSectionId === "S2C") {
-      if (!s2cTipoOrg) {
-        errs.push("Seleccioná el tipo de organización comunitaria.");
-      } else if (s2cTipoOrg === "otra" && !s2cTipoOrgOtra.trim()) {
-        errs.push("Especificá ¿Cuál? en el tipo de organización.");
-      }
-      if (!s2cRol) {
-        errs.push("Seleccioná tu rol en la organización.");
-      } else if (s2cRol === "otro" && !s2cRolOtro.trim()) {
-        errs.push("Especificá ¿Cuál? en tu rol.");
-      }
-    } else if (currentSectionId === "S3") {
-      if (!regionSanitaria) errs.push("Seleccioná tu Región Sanitaria.");
-      if (!municipio.trim()) errs.push("Indicá tu Municipio.");
-      if (!antiguedad) errs.push("Seleccioná tu antigüedad en la tarea.");
-    } else if (currentSectionId === "S4") {
-      if (priorities.length !== 5) {
-        errs.push("Elegí y ordená las 5 temáticas prioritarias (1.° a 5.° lugar).");
-      }
-      if (!rank1Problema.trim() || !rank1Propuesta.trim()) {
-        errs.push(
-          "Completá tanto el problema principal como tu propuesta para la temática en 1.° lugar."
-        );
-      }
-      if (!rank2Problema.trim() || !rank2Propuesta.trim()) {
-        errs.push(
-          "Completá tanto el problema principal como tu propuesta para la temática en 2.° lugar."
-        );
-      }
-      if (!rank3Problema.trim() || !rank3Propuesta.trim()) {
-        errs.push(
-          "Completá tanto el problema principal como tu propuesta para la temática en 3.° lugar."
-        );
-      }
-      if (!relacionZonal) {
-        errs.push(
-          "Seleccioná cómo describirías hoy la relación entre el centro de salud, el hospital y las organizaciones de tu zona."
-        );
-      }
-    } else if (currentSectionId === "S5") {
-      if (!interesaMesa) {
-        errs.push("Indicá si te interesa integrar una mesa de trabajo.");
-      } else if (interesaMesa === "si" || interesaMesa === "tal_vez") {
-        if (tematicasMesa.length === 0) {
-          errs.push("Seleccioná al menos una temática sobre la que te gustaría trabajar.");
-        }
-        if (!ofreceReferente) {
-          errs.push("Indicá si te ofrecés como referente de mesa.");
-        }
-        if (horarios.length === 0) {
-          errs.push("Seleccioná al menos un horario posible para los encuentros.");
-        }
-        if (!modalidad) {
-          errs.push("Seleccioná tu modalidad preferida.");
-        }
-      }
+  // Persist local draft state whenever fields change
+  useEffect(() => {
+    if (!submissionId || submittedState.done) return;
+    try {
+      window.localStorage.setItem(
+        ACTIVE_DRAFT_STORAGE_KEY,
+        JSON.stringify({
+          submissionId,
+          stepIndex,
+          consent,
+          mainLocation,
+          s2aTarea,
+          s2aTareaOtra,
+          s2bTipoHospital,
+          s2bTarea,
+          s2bTareaOtra,
+          s2bAreaServicio,
+          s2cTipoOrg,
+          s2cTipoOrgOtra,
+          s2cRol,
+          s2cRolOtro,
+          s2dAmbito,
+          s2dRol,
+          s2dRolOtra,
+          s2dArea,
+          regionSanitaria,
+          municipio,
+          antiguedad,
+          priorities,
+          customThemes,
+          rank1Problema,
+          rank1Propuesta,
+          rank2Problema,
+          rank2Propuesta,
+          rank3Problema,
+          rank3Propuesta,
+          otraTematicaAbierta,
+          relacionZonal,
+          interesaMesa,
+          tematicasMesa,
+          ofreceReferente,
+          horarios,
+          modalidad,
+          customAnswers,
+          done: false,
+        })
+      );
+    } catch {
+      // ignore storage quota errors
     }
+  }, [
+    submissionId,
+    stepIndex,
+    consent,
+    mainLocation,
+    s2aTarea,
+    s2aTareaOtra,
+    s2bTipoHospital,
+    s2bTarea,
+    s2bTareaOtra,
+    s2bAreaServicio,
+    s2cTipoOrg,
+    s2cTipoOrgOtra,
+    s2cRol,
+    s2cRolOtro,
+    s2dAmbito,
+    s2dRol,
+    s2dRolOtra,
+    s2dArea,
+    regionSanitaria,
+    municipio,
+    antiguedad,
+    priorities,
+    customThemes,
+    rank1Problema,
+    rank1Propuesta,
+    rank2Problema,
+    rank2Propuesta,
+    rank3Problema,
+    rank3Propuesta,
+    otraTematicaAbierta,
+    relacionZonal,
+    interesaMesa,
+    tematicasMesa,
+    ofreceReferente,
+    horarios,
+    modalidad,
+    customAnswers,
+    submittedState.done,
+  ]);
 
-    // Validate required custom admin questions in this section
-    for (const cq of extraSectionQuestions) {
-      if (cq.required) {
-        const val = customAnswers[cq.id];
-        const empty = Array.isArray(val)
-          ? val.length === 0
-          : !val || !String(val).trim();
-        if (empty) {
-          errs.push(`Completá la pregunta obligatoria: «${cq.label}»`);
-        }
-      }
-    }
-
-    setStepErrors(errs);
-    return errs.length === 0;
-  };
-
-  const handleNext = () => {
-    if (currentSectionId === "S0" && consent === false) {
-      setDeclinedConsent(true);
-      return;
-    }
-    if (!validateCurrentStep()) return;
-    setStepErrors([]);
-    setStepIndex((prev) => Math.min(prev + 1, activeSectionIds.length - 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleBack = () => {
-    setStepErrors([]);
-    setStepIndex((prev) => Math.max(0, prev - 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const buildSubmissionPayload = (): SurveySubmissionPayload => {
-    const uuid =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `sub_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  const buildSubmissionPayload = (
+    isComplete: boolean,
+    stepCode: string
+  ): SurveySubmissionPayload => {
+    const id = submissionId || generateUuid();
+    if (!submissionId) setSubmissionId(id);
 
     return {
-      clientSubmissionId: uuid,
-      surveyVersion: schema.version || 1,
+      clientSubmissionId: id,
+      surveyVersion: schema.version || 2,
       createdAtClient: new Date().toISOString(),
       sourcePlatform: "web",
+      isComplete,
+      currentStep: stepCode,
       consent: consent === true,
-      mainLocation: (mainLocation || "primer_nivel") as
+      mainLocation: (mainLocation || undefined) as
         | "primer_nivel"
         | "hospital"
-        | "comunitario",
+        | "comunitario"
+        | "gestion_sanitaria"
+        | undefined,
       section2A:
         mainLocation === "primer_nivel"
           ? { tarea: s2aTarea, tareaOtra: s2aTareaOtra }
@@ -345,6 +407,15 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               tipoOrganizacionOtra: s2cTipoOrgOtra,
               rol: s2cRol,
               rolOtro: s2cRolOtro,
+            }
+          : undefined,
+      section2D:
+        mainLocation === "gestion_sanitaria"
+          ? {
+              ambitoGestion: s2dAmbito,
+              rolGestion: s2dRol,
+              rolGestionOtra: s2dRolOtra,
+              areaEspacio: s2dArea,
             }
           : undefined,
       section3: {
@@ -391,9 +462,164 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     };
   };
 
+  // Progressive background sync (non-blocking) on every step transition (S10)
+  const syncPartialProgressInBackground = (nextStepId: string) => {
+    if (consent !== true) return;
+    const partialPayload = buildSubmissionPayload(false, nextStepId);
+    enqueueOfflineResponse(partialPayload)
+      .then(() => {
+        window.dispatchEvent(new Event("mosapro-queue-updated"));
+        return flushOfflineQueues();
+      })
+      .then(() => {
+        window.dispatchEvent(new Event("mosapro-queue-updated"));
+      })
+      .catch(() => {
+        // Offline queue retains the partial state until connection returns
+      });
+  };
+
+  const validateCurrentStep = (): boolean => {
+    const errs: string[] = [];
+
+    if (currentSectionId === "S0") {
+      if (consent === null) {
+        errs.push("Por favor seleccioná si aceptás participar.");
+      }
+    } else if (currentSectionId === "S1") {
+      if (!mainLocation) {
+        errs.push(
+          "Seleccioná dónde realizás tu tarea principal para continuar."
+        );
+      }
+    } else if (currentSectionId === "S2A") {
+      if (!s2aTarea) {
+        errs.push("Seleccioná tu tarea en el primer nivel.");
+      } else if (s2aTarea === "otra" && !s2aTareaOtra.trim()) {
+        errs.push("Especificá ¿Cuál? en tu tarea.");
+      }
+    } else if (currentSectionId === "S2B") {
+      if (!s2bTipoHospital)
+        errs.push(
+          "Seleccioná la dependencia/gestión del hospital (Nacional, Provincial o Municipal)."
+        );
+      if (!s2bTarea) {
+        errs.push("Seleccioná tu tarea en el hospital.");
+      } else if (s2bTarea === "otra" && !s2bTareaOtra.trim()) {
+        errs.push("Especificá ¿Cuál? en tu tarea.");
+      }
+      if (!s2bAreaServicio.trim()) {
+        errs.push("Completá o seleccioná el área o servicio donde trabajás.");
+      }
+    } else if (currentSectionId === "S2C") {
+      if (!s2cTipoOrg) {
+        errs.push("Seleccioná el tipo de organización comunitaria.");
+      } else if (s2cTipoOrg === "otra" && !s2cTipoOrgOtra.trim()) {
+        errs.push("Especificá ¿Cuál? en el tipo de organización.");
+      }
+      if (!s2cRol) {
+        errs.push("Seleccioná tu rol en la organización.");
+      } else if (s2cRol === "otro" && !s2cRolOtro.trim()) {
+        errs.push("Especificá ¿Cuál? en tu rol.");
+      }
+    } else if (currentSectionId === "S2D") {
+      if (!s2dAmbito) {
+        errs.push(
+          "Seleccioná el ámbito de gestión (Nacional, Provincial o Municipal)."
+        );
+      }
+      if (!s2dRol) {
+        errs.push("Seleccioná tu función o rol en gestión sanitaria.");
+      } else if (s2dRol === "otra" && !s2dRolOtra.trim()) {
+        errs.push("Especificá ¿Cuál? en tu función o rol.");
+      }
+      if (!s2dArea.trim()) {
+        errs.push(
+          "Completá el área, dirección, secretaría o Región Sanitaria donde desempeñás tu tarea."
+        );
+      }
+    } else if (currentSectionId === "S3") {
+      if (!regionSanitaria) errs.push("Seleccioná tu Región Sanitaria.");
+      if (!municipio.trim()) errs.push("Indicá tu Municipio.");
+      if (!antiguedad) errs.push("Seleccioná tu antigüedad en la tarea.");
+    } else if (currentSectionId === "S4") {
+      // Note: 4.2, 4.3, 4.4 problem/proposal are NOT blocking per user requirement
+      if (priorities.length !== 5) {
+        errs.push(
+          "Elegí y ordená las 5 temáticas prioritarias (1.° a 5.° lugar)."
+        );
+      }
+      if (!relacionZonal) {
+        errs.push(
+          "Seleccioná cómo describirías hoy la relación entre el centro de salud, el hospital y las organizaciones de tu zona."
+        );
+      }
+    } else if (currentSectionId === "S5") {
+      if (!interesaMesa) {
+        errs.push("Indicá si te interesa integrar una mesa de trabajo.");
+      } else if (interesaMesa === "si" || interesaMesa === "tal_vez") {
+        if (tematicasMesa.length === 0) {
+          errs.push(
+            "Seleccioná al menos una temática sobre la que te gustaría trabajar."
+          );
+        }
+        if (!ofreceReferente) {
+          errs.push("Indicá si te ofrecés como referente de mesa.");
+        }
+        if (horarios.length === 0) {
+          errs.push(
+            "Seleccioná al menos un horario posible para los encuentros."
+          );
+        }
+        if (!modalidad) {
+          errs.push("Seleccioná tu modalidad preferida.");
+        }
+      }
+    }
+
+    // Validate required custom admin questions in this section
+    for (const cq of extraSectionQuestions) {
+      if (cq.required) {
+        const val = customAnswers[cq.id];
+        const empty = Array.isArray(val)
+          ? val.length === 0
+          : !val || !String(val).trim();
+        if (empty) {
+          errs.push(`Completá la pregunta obligatoria: «${cq.label}»`);
+        }
+      }
+    }
+
+    setStepErrors(errs);
+    return errs.length === 0;
+  };
+
+  const handleNext = () => {
+    if (currentSectionId === "S0" && consent === false) {
+      setDeclinedConsent(true);
+      return;
+    }
+    if (!validateCurrentStep()) return;
+    setStepErrors([]);
+    const nextIdx = Math.min(stepIndex + 1, activeSectionIds.length - 1);
+    const nextSecId = activeSectionIds[nextIdx] || currentSectionId;
+    setStepIndex(nextIdx);
+    syncPartialProgressInBackground(nextSecId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleBack = () => {
+    setStepErrors([]);
+    const prevIdx = Math.max(0, stepIndex - 1);
+    const prevSecId = activeSectionIds[prevIdx] || currentSectionId;
+    setStepIndex(prevIdx);
+    syncPartialProgressInBackground(prevSecId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleSubmit = async () => {
     if (!validateCurrentStep()) return;
-    const payload = buildSubmissionPayload();
+    const payload = buildSubmissionPayload(true, "S5");
     const fullCheck = validateSurveySubmission(payload);
     if (!fullCheck.valid) {
       setStepErrors(fullCheck.errors);
@@ -407,6 +633,12 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
       const flushRes = await flushOfflineQueues();
       window.dispatchEvent(new Event("mosapro-queue-updated"));
+
+      try {
+        window.localStorage.removeItem(ACTIVE_DRAFT_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
 
       setSubmittedState({
         done: true,
@@ -423,6 +655,12 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
   };
 
   const handleResetNewSurvey = () => {
+    try {
+      window.localStorage.removeItem(ACTIVE_DRAFT_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setSubmissionId(generateUuid());
     setConsent(null);
     setDeclinedConsent(false);
     setMainLocation("");
@@ -436,6 +674,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     setS2cTipoOrgOtra("");
     setS2cRol("");
     setS2cRolOtro("");
+    setS2dAmbito("");
+    setS2dRol("");
+    setS2dRolOtra("");
+    setS2dArea("");
     if (!regionLockedFromLink) setRegionSanitaria("");
     setMunicipio("");
     setAntiguedad("");
@@ -522,19 +764,19 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           </div>
 
           <div className="p-6 sm:p-8 space-y-6 text-center">
-            <div className="bg-[#f3f1ee] border border-[#d7cfc7] rounded-xl p-5 text-left space-y-3">
+            <div className="bg-[#f3f1ee] border border-[#d7cfc7] rounded-xl p-6 text-center space-y-4">
               <p className="text-base font-medium text-[#1f2f40] leading-relaxed">
                 {schema.finalMessage ||
                   "¡Gracias! Si querés que te convoquemos a una mesa, dejanos tus datos en este otro formulario, que no se vincula con tus respuestas:"}
               </p>
-              <div className="pt-1">
+              <div className="pt-1 flex justify-center">
                 <Link
                   href={contactHref}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#567c7f] hover:bg-[#4f7478] text-white font-bold text-sm shadow-sm transition"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#567c7f] hover:bg-[#4f7478] text-white font-bold text-sm shadow-sm transition"
                 >
-                  <HeartHandshake className="w-5 h-5" />
+                  <HeartHandshake className="w-5 h-5 shrink-0" />
                   <span>Ir al formulario de contacto (desvinculado y anónimo)</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 shrink-0" />
                 </Link>
               </div>
             </div>
@@ -588,7 +830,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           <div className="flex items-center justify-between text-xs text-white/85 mb-1.5 font-medium">
             <span>{currentSection?.title}</span>
             <span>
-              Paso {stepIndex + 1} de {activeSectionIds.length}
+              Paso {stepIndex + 1} de {activeSectionIds.length} · Guardado automático activo
             </span>
           </div>
           <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
@@ -636,7 +878,14 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         {currentSectionId === "S0" && (
           <div className="space-y-5">
             <div className="bg-[#f3f6f7] border-l-4 border-[#567c7f] p-5 rounded-r-xl text-base leading-relaxed text-[#1f2f40] font-medium">
-              «{getQ("q_consent", DEFAULT_SURVEY_SCHEMA.sections[0].questions[0].label).label}»
+              «
+              {
+                getQ(
+                  "q_consent",
+                  DEFAULT_SURVEY_SCHEMA.sections[0].questions[0].label
+                ).label
+              }
+              »
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <button
@@ -692,35 +941,41 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         {currentSectionId === "S1" && (
           <div className="space-y-4">
             <label className="block text-base font-bold text-slate-900">
-              {getQ("q_main_location", "¿Dónde realizás tu tarea principal?").label}
+              {
+                getQ(
+                  "q_main_location",
+                  "¿Dónde realizás tu tarea principal?"
+                ).label
+              }
             </label>
             <div className="space-y-3">
-              {(
-                getQ("q_main_location", "").options || [
-                  {
-                    value: "primer_nivel",
-                    label: "Centro de salud o unidad sanitaria (primer nivel)",
-                  },
-                  {
-                    value: "hospital",
-                    label: "Hospital municipal o provincial (segundo nivel)",
-                  },
-                  {
-                    value: "comunitario",
-                    label:
-                      "Sociedad de fomento, organización barrial, club, dispensario, CIC u otro espacio comunitario",
-                  },
-                ]
-              ).map((opt) => {
+              {[
+                {
+                  value: "primer_nivel",
+                  label: "Centro de salud o unidad sanitaria (primer nivel)",
+                },
+                {
+                  value: "hospital",
+                  label:
+                    "Hospital nacional, provincial o municipal (segundo nivel)",
+                },
+                {
+                  value: "comunitario",
+                  label:
+                    "Sociedad de fomento, organización barrial, club, dispensario, CIC u otro espacio comunitario",
+                },
+                {
+                  value: "gestion_sanitaria",
+                  label: "Gestión sanitaria",
+                },
+              ].map((opt) => {
                 const selected = mainLocation === opt.value;
                 return (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() =>
-                      setMainLocation(
-                        opt.value as "primer_nivel" | "hospital" | "comunitario"
-                      )
+                      setMainLocation(opt.value as MainLocationType)
                     }
                     className={`w-full p-4 rounded-xl border-2 text-left transition flex items-center justify-between gap-3 cursor-pointer ${
                       selected
@@ -779,7 +1034,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
             {s2aTarea === "otra" && (
               <div className="bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
                 <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                  ¿Cuál? Especificá tu tarea <span className="text-red-600">*</span>
+                  ¿Cuál? Especificá tu tarea{" "}
+                  <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -798,18 +1054,25 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           <div className="space-y-6">
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
-                1. {getQ("q_2b_tipo_hospital", "Tipo de hospital:").label}
+                1.{" "}
+                {
+                  getQ(
+                    "q_2b_tipo_hospital",
+                    "Dependencia / Gestión del hospital:"
+                  ).label
+                }
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { value: "municipal", label: "Municipal" },
-                  { value: "provincial", label: "Provincial" },
+                  { value: "nacional", label: "Gestión Nacional" },
+                  { value: "provincial", label: "Gestión Provincial" },
+                  { value: "municipal", label: "Gestión Municipal" },
                 ].map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setS2bTipoHospital(opt.value)}
-                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
+                    className={`p-3.5 rounded-xl border text-center text-sm transition cursor-pointer ${
                       s2bTipoHospital === opt.value
                         ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
                         : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
@@ -848,7 +1111,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               {s2bTarea === "otra" && (
                 <div className="mt-3 bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
                   <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                    ¿Cuál? Especificá tu tarea <span className="text-red-600">*</span>
+                    ¿Cuál? Especificá tu tarea{" "}
+                    <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -867,16 +1131,16 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                 {
                   getQ(
                     "q_2b_area_servicio",
-                    "Área o servicio donde trabajás (respuesta breve):"
+                    "Área o servicio donde trabajás:"
                   ).label
                 }
               </label>
-              <input
-                type="text"
+              <p className="text-xs text-slate-500 mb-2">
+                Podés buscar en el listado básico de servicios o escribir libremente si el tuyo no está en la lista.
+              </p>
+              <HospitalServiceCombobox
                 value={s2bAreaServicio}
-                onChange={(e) => setS2bAreaServicio(e.target.value)}
-                placeholder="Ej. Guardia, Clínica Médica, Pediatría, Laboratorio, Mantenimiento..."
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] outline-none text-sm"
+                onChange={setS2bAreaServicio}
               />
             </div>
           </div>
@@ -951,7 +1215,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               {s2cRol === "otro" && (
                 <div className="mt-3 bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
                   <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                    ¿Cuál? Especificá tu rol <span className="text-red-600">*</span>
+                    ¿Cuál? Especificá tu rol{" "}
+                    <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -962,6 +1227,112 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   />
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 2D: Gestión Sanitaria */}
+        {currentSectionId === "S2D" && (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-base font-bold text-slate-900 mb-2.5">
+                1. {getQ("q_2d_ambito", "Ámbito de gestión:").label}
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { value: "nacional", label: "Gestión Nacional" },
+                  { value: "provincial", label: "Gestión Provincial" },
+                  { value: "municipal", label: "Gestión Municipal" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setS2dAmbito(opt.value)}
+                    className={`p-3.5 rounded-xl border text-center text-sm transition cursor-pointer ${
+                      s2dAmbito === opt.value
+                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
+                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-base font-bold text-slate-900 mb-2.5">
+                2. {getQ("q_2d_rol", "Tu función o rol:").label}
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {[
+                  {
+                    value: "direccion_conduccion",
+                    label: "Dirección / Secretaría / Coordinación",
+                  },
+                  {
+                    value: "equipo_tecnico",
+                    label: "Equipo técnico / profesional de gestión",
+                  },
+                  {
+                    value: "supervision_programa",
+                    label: "Referente de programa o red territorial",
+                  },
+                  {
+                    value: "administrativo_logistica",
+                    label: "Administración / compras / sistemas / logística",
+                  },
+                  { value: "otra", label: "Otra" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setS2dRol(opt.value)}
+                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
+                      s2dRol === opt.value
+                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
+                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {s2dRol === "otra" && (
+                <div className="mt-3 bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
+                  <label className="block text-xs font-bold text-[#3f5f61] mb-1">
+                    ¿Cuál? Especificá tu función o rol{" "}
+                    <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={s2dRolOtra}
+                    onChange={(e) => setS2dRolOtra(e.target.value)}
+                    placeholder="Describí tu función en gestión..."
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-base font-bold text-slate-900 mb-1">
+                3.{" "}
+                {
+                  getQ(
+                    "q_2d_area",
+                    "Área, dirección, secretaría o Región Sanitaria donde desempeñás tu tarea:"
+                  ).label
+                }
+              </label>
+              <input
+                type="text"
+                value={s2dArea}
+                onChange={(e) => setS2dArea(e.target.value)}
+                placeholder="Ej. Secretaría de Salud Municipal, Región Sanitaria VI, Dirección de Redes..."
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] outline-none text-sm"
+              />
             </div>
           </div>
         )}
@@ -1062,7 +1433,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               />
             </div>
 
-            {/* 4.2, 4.3, 4.4 Dynamic Problem + Proposal Pairs */}
+            {/* 4.2, 4.3, 4.4 Dynamic Problem + Proposal Pairs (Non-blocking) */}
             {[
               {
                 num: "2",
@@ -1097,7 +1468,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-base font-bold text-[#1f2f40]">
-                      {item.num}. Sobre la temática que ubicaste en {item.rank}.° lugar:
+                      {item.num}. Sobre la temática que ubicaste en {item.rank}.° lugar{" "}
+                      <span className="text-xs font-normal text-slate-500">
+                        (No bloqueante)
+                      </span>
                     </h3>
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#567c7f] text-white">
                       {item.rank}.° Prioridad: {chosenLabel}
@@ -1106,8 +1480,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-1">
-                      ¿Cuál es el principal problema que ves en tu trabajo o en tu barrio?{" "}
-                      <span className="text-red-600">*</span>
+                      ¿Cuál es el principal problema que ves en tu trabajo o en tu barrio?
                     </label>
                     <textarea
                       rows={3}
@@ -1120,8 +1493,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-1">
-                      ¿Qué propuesta tenés para ese problema en particular?{" "}
-                      <span className="text-red-600">*</span>
+                      ¿Qué propuesta tenés para ese problema en particular?
                     </label>
                     <textarea
                       rows={3}
@@ -1145,7 +1517,9 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     "¿Hay alguna temática que no esté en la lista y debería abordarse?"
                   ).label
                 }{" "}
-                <span className="text-xs font-normal text-slate-500">(Opcional)</span>
+                <span className="text-xs font-normal text-slate-500">
+                  (Opcional)
+                </span>
               </label>
               <textarea
                 rows={3}
@@ -1249,7 +1623,9 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {allParticipationThemes.map((th) => {
                       const checked = tematicasMesa.includes(th.id);
-                      const isInTop5 = priorities.some((p) => p.themeId === th.id);
+                      const isInTop5 = priorities.some(
+                        (p) => p.themeId === th.id
+                      );
                       return (
                         <button
                           key={th.id}

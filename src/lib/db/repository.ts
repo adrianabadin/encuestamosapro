@@ -20,6 +20,8 @@ export interface StoredSurveyResponse {
   clientSubmissionId: string;
   surveyVersion: number;
   sourcePlatform: string;
+  isComplete: boolean;
+  currentStep: string;
   regionSanitaria: string;
   municipio: string;
   mainLocation: string;
@@ -95,11 +97,53 @@ export async function syncSurveyResponsesBatch(
     }
 
     const validItem = item as SurveySubmissionPayload;
+    const isComplete = validItem.isComplete !== false;
+    const currentStep = validItem.currentStep || (isComplete ? "S5" : "S0");
+    const region = validItem.section3?.regionSanitaria || "";
+    const municipio = validItem.section3?.municipio || "";
+    const mainLoc = validItem.mainLocation || "";
+    const antiguedad = validItem.section3?.antiguedad || "";
+    const relacion = validItem.section4?.relacionZonal || "";
+    const interesa = validItem.section5?.interesaMesa || "";
+    const referente = validItem.section5?.ofreceReferente || null;
+
     const existing = await db.query(
       `SELECT id FROM mosapro_survey_responses WHERE client_submission_id = $1`,
       [validItem.clientSubmissionId]
     );
     if (existing.rowCount && existing.rowCount > 0) {
+      await db.query(
+        `UPDATE mosapro_survey_responses
+         SET survey_version = $2,
+             source_platform = $3,
+             is_complete = $4,
+             current_step = $5,
+             region_sanitaria = $6,
+             municipio = $7,
+             main_location = $8,
+             antiguedad = $9,
+             relacion_zonal = $10,
+             interesa_mesa = $11,
+             ofrece_referente = $12,
+             payload_json = $13::jsonb,
+             synced_at = NOW()
+         WHERE client_submission_id = $1`,
+        [
+          validItem.clientSubmissionId,
+          validItem.surveyVersion || 2,
+          validItem.sourcePlatform || "web",
+          isComplete,
+          currentStep,
+          region,
+          municipio,
+          mainLoc,
+          antiguedad,
+          relacion,
+          interesa,
+          referente,
+          JSON.stringify(validItem),
+        ]
+      );
       accepted.push(validItem.clientSubmissionId);
       duplicates.push(validItem.clientSubmissionId);
       continue;
@@ -110,6 +154,8 @@ export async function syncSurveyResponsesBatch(
         client_submission_id,
         survey_version,
         source_platform,
+        is_complete,
+        current_step,
         region_sanitaria,
         municipio,
         main_location,
@@ -119,20 +165,24 @@ export async function syncSurveyResponsesBatch(
         ofrece_referente,
         payload_json,
         created_at_client
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12)`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14)`,
       [
         validItem.clientSubmissionId,
-        validItem.surveyVersion || 1,
+        validItem.surveyVersion || 2,
         validItem.sourcePlatform || "web",
-        validItem.section3.regionSanitaria,
-        validItem.section3.municipio,
-        validItem.mainLocation,
-        validItem.section3.antiguedad,
-        validItem.section4.relacionZonal,
-        validItem.section5.interesaMesa,
-        validItem.section5.ofreceReferente || null,
+        isComplete,
+        currentStep,
+        region,
+        municipio,
+        mainLoc,
+        antiguedad,
+        relacion,
+        interesa,
+        referente,
         JSON.stringify(validItem),
-        validItem.createdAtClient ? new Date(validItem.createdAtClient) : new Date(),
+        validItem.createdAtClient
+          ? new Date(validItem.createdAtClient)
+          : new Date(),
       ]
     );
 
@@ -226,6 +276,8 @@ export async function getAllSurveyResponses(): Promise<StoredSurveyResponse[]> {
     clientSubmissionId: row.client_submission_id,
     surveyVersion: row.survey_version,
     sourcePlatform: row.source_platform,
+    isComplete: row.is_complete !== false,
+    currentStep: row.current_step || "S5",
     regionSanitaria: row.region_sanitaria,
     municipio: row.municipio,
     mainLocation: row.main_location,

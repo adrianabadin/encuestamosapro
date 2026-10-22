@@ -40,6 +40,14 @@ describe("Survey UI Flow & Regional Prefill Helpers (S3, S4, S5, S6, S7, S8)", (
       "S4",
       "S5",
     ]);
+    expect(getActiveSectionIds("gestion_sanitaria")).toEqual([
+      "S0",
+      "S1",
+      "S2D",
+      "S3",
+      "S4",
+      "S5",
+    ]);
   });
 
   it("resolves dynamic theme labels for 1.°, 2.° and 3.° place in Section 4.2-4.4 (S7)", () => {

@@ -21,8 +21,32 @@ export type QuestionType =
   | "long_text"
   | "region_select"
   | "municipio_autocomplete"
+  | "service_combobox"
   | "priority_grid"
   | "priority_detail_pair";
+
+export const DEFAULT_HOSPITAL_SERVICES: string[] = [
+  "Guardia / Emergencias",
+  "Clínica Médica",
+  "Pediatría / Neonatología",
+  "Ginecología y Obstetricia / Maternidad",
+  "Cirugía / Quirófano",
+  "Terapia Intensiva (UTI / UCIP)",
+  "Salud Mental",
+  "Enfermería",
+  "Consultorios Externos",
+  "Diagnóstico por Imágenes (Rayos, Ecografía, Tomografía)",
+  "Laboratorio / Hemoterapia",
+  "Farmacia / Esterilización",
+  "Kinesiología y Rehabilitación",
+  "Trabajo Social / Servicio Social",
+  "Epidemiología / Estadística",
+  "Docencia e Investigación / Residencias",
+  "Administración / Admisión / Turnos / Facturación (SAMO)",
+  "Mantenimiento / Limpieza / Cocina / Camilleros / Seguridad",
+  "Traslados / Choferes / SIES",
+  "Dirección / Gestión Hospitalaria",
+];
 
 export interface SurveyQuestion {
   id: string;
@@ -132,7 +156,7 @@ export const DEFAULT_THEMES: SurveyTheme[] = [
 ];
 
 export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
-  version: 1,
+  version: 2,
   title: "Relevamiento Sanitario Territorial — MOSAPRO",
   subtitle:
     "Movimiento Sanitario Provincial · Hacia una construcción colectiva del sistema de salud bonaerense",
@@ -194,6 +218,11 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
                 "Sociedad de fomento, organización barrial, club, dispensario, CIC u otro espacio comunitario",
               nextSection: "S2C",
             },
+            {
+              value: "gestion_sanitaria",
+              label: "Gestión sanitaria",
+              nextSection: "S2D",
+            },
           ],
         },
       ],
@@ -232,7 +261,7 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
     {
       id: "S2B",
       title: "Sección 2B. Hospital",
-      description: "Hospital municipal o provincial (segundo nivel).",
+      description: "Hospital nacional, provincial o municipal (segundo nivel).",
       order: 3,
       condition: {
         dependsOnQuestionId: "q_main_location",
@@ -243,13 +272,14 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
           id: "q_2b_tipo_hospital",
           sectionId: "S2B",
           code: "2B.1",
-          label: "Tipo de hospital:",
+          label: "Dependencia / Gestión del hospital:",
           type: "single_choice",
           required: true,
           order: 1,
           options: [
-            { value: "municipal", label: "Municipal" },
-            { value: "provincial", label: "Provincial" },
+            { value: "nacional", label: "Gestión Nacional" },
+            { value: "provincial", label: "Gestión Provincial" },
+            { value: "municipal", label: "Gestión Municipal" },
           ],
         },
         {
@@ -281,8 +311,9 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
           sectionId: "S2B",
           code: "2B.3",
           label: "Área o servicio donde trabajás:",
-          helperText: "Respuesta breve (ej. Guardia, Pediatría, Clínica, Admisión, etc.)",
-          type: "short_text",
+          helperText:
+            "Podés elegir de la lista filtrando al escribir o dejar escrito manualmente tu servicio.",
+          type: "service_combobox",
           required: true,
           order: 3,
         },
@@ -332,6 +363,72 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
             { value: "voluntario", label: "Voluntario" },
             { value: "otro", label: "Otro", requiresSpecify: true },
           ],
+        },
+      ],
+    },
+    {
+      id: "S2D",
+      title: "Sección 2D. Gestión sanitaria",
+      description:
+        "Espacios de gestión sanitaria nacional, provincial o municipal.",
+      order: 5,
+      condition: {
+        dependsOnQuestionId: "q_main_location",
+        allowedValues: ["gestion_sanitaria"],
+      },
+      questions: [
+        {
+          id: "q_2d_ambito",
+          sectionId: "S2D",
+          code: "2D.1",
+          label: "Ámbito de gestión:",
+          type: "single_choice",
+          required: true,
+          order: 1,
+          options: [
+            { value: "nacional", label: "Gestión Nacional" },
+            { value: "provincial", label: "Gestión Provincial" },
+            { value: "municipal", label: "Gestión Municipal" },
+          ],
+        },
+        {
+          id: "q_2d_rol",
+          sectionId: "S2D",
+          code: "2D.2",
+          label: "Tu función o rol:",
+          type: "single_choice",
+          required: true,
+          order: 2,
+          specifyLabel: "¿Cuál?",
+          options: [
+            {
+              value: "direccion_conduccion",
+              label: "Dirección / Secretaría / Coordinación",
+            },
+            {
+              value: "equipo_tecnico",
+              label: "Equipo técnico / profesional de gestión",
+            },
+            {
+              value: "supervision_programa",
+              label: "Referente de programa o red territorial",
+            },
+            {
+              value: "administrativo_logistica",
+              label: "Administración / compras / sistemas / logística",
+            },
+            { value: "otra", label: "Otra", requiresSpecify: true },
+          ],
+        },
+        {
+          id: "q_2d_area",
+          sectionId: "S2D",
+          code: "2D.3",
+          label: "Área, dirección, secretaría o Región Sanitaria donde desempeñás tu tarea:",
+          helperText: "Respuesta breve.",
+          type: "short_text",
+          required: true,
+          order: 3,
         },
       ],
     },
@@ -405,7 +502,7 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
           label:
             "Sobre la temática que ubicaste en 1.° lugar: ¿cuál es el principal problema que ves en tu trabajo o en tu barrio y qué propuesta tenés?",
           type: "priority_detail_pair",
-          required: true,
+          required: false,
           order: 2,
         },
         {
@@ -415,7 +512,7 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
           label:
             "Sobre la temática que ubicaste en 2.° lugar: ¿cuál es el principal problema que ves en tu trabajo o en tu barrio y qué propuesta tenés?",
           type: "priority_detail_pair",
-          required: true,
+          required: false,
           order: 3,
         },
         {
@@ -425,7 +522,7 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
           label:
             "Sobre la temática que ubicaste en 3.° lugar: ¿cuál es el principal problema que ves en tu trabajo o en tu barrio y qué propuesta tenés?",
           type: "priority_detail_pair",
-          required: true,
+          required: false,
           order: 4,
         },
         {

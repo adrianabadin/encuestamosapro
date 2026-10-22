@@ -96,22 +96,19 @@ export async function ensureDbInitialized(): Promise<void> {
       client_submission_id VARCHAR(128) UNIQUE NOT NULL,
       survey_version INTEGER NOT NULL DEFAULT 1,
       source_platform VARCHAR(32) NOT NULL DEFAULT 'web',
-      region_sanitaria VARCHAR(16) NOT NULL,
-      municipio VARCHAR(128) NOT NULL,
-      main_location VARCHAR(32) NOT NULL,
-      antiguedad VARCHAR(32) NOT NULL,
-      relacion_zonal VARCHAR(32) NOT NULL,
-      interesa_mesa VARCHAR(16) NOT NULL,
+      is_complete BOOLEAN NOT NULL DEFAULT TRUE,
+      current_step VARCHAR(16) NOT NULL DEFAULT 'S5',
+      region_sanitaria VARCHAR(16) NOT NULL DEFAULT '',
+      municipio VARCHAR(128) NOT NULL DEFAULT '',
+      main_location VARCHAR(32) NOT NULL DEFAULT '',
+      antiguedad VARCHAR(32) NOT NULL DEFAULT '',
+      relacion_zonal VARCHAR(32) NOT NULL DEFAULT '',
+      interesa_mesa VARCHAR(16) NOT NULL DEFAULT '',
       ofrece_referente VARCHAR(16),
       payload_json JSONB NOT NULL,
       created_at_client TIMESTAMPTZ,
       synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-
-    CREATE INDEX IF NOT EXISTS idx_mosapro_resp_region
-      ON mosapro_survey_responses(region_sanitaria);
-    CREATE INDEX IF NOT EXISTS idx_mosapro_resp_location
-      ON mosapro_survey_responses(main_location);
 
     CREATE TABLE IF NOT EXISTS mosapro_contact_submissions (
       id SERIAL PRIMARY KEY,
@@ -133,8 +130,19 @@ export async function ensureDbInitialized(): Promise<void> {
     );
   `);
 
+  try {
+    await db.query(`
+      ALTER TABLE mosapro_survey_responses
+        ADD COLUMN IF NOT EXISTS is_complete BOOLEAN NOT NULL DEFAULT TRUE;
+      ALTER TABLE mosapro_survey_responses
+        ADD COLUMN IF NOT EXISTS current_step VARCHAR(16) NOT NULL DEFAULT 'S5';
+    `);
+  } catch {
+    // ignore if locked or already applied
+  }
+
   const existing = await db.query(
-    `SELECT slug FROM mosapro_survey_definitions WHERE slug = 'relevamiento-principal'`
+    `SELECT slug, version FROM mosapro_survey_definitions WHERE slug = 'relevamiento-principal'`
   );
   if (existing.rowCount === 0) {
     await db.query(
@@ -145,6 +153,13 @@ export async function ensureDbInitialized(): Promise<void> {
         DEFAULT_SURVEY_SCHEMA.version,
         JSON.stringify(DEFAULT_SURVEY_SCHEMA),
       ]
+    );
+  } else if (existing.rows[0].version < DEFAULT_SURVEY_SCHEMA.version) {
+    await db.query(
+      `UPDATE mosapro_survey_definitions
+       SET version = $1, schema_json = $2::jsonb, updated_at = NOW()
+       WHERE slug = 'relevamiento-principal'`,
+      [DEFAULT_SURVEY_SCHEMA.version, JSON.stringify(DEFAULT_SURVEY_SCHEMA)]
     );
   }
 

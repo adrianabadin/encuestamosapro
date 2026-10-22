@@ -1,8 +1,13 @@
 import { PriorityRankEntry } from "./validator";
 
-export function getActiveSectionIds(
-  mainLocation?: "primer_nivel" | "hospital" | "comunitario" | ""
-): string[] {
+export type MainLocationType =
+  | "primer_nivel"
+  | "hospital"
+  | "comunitario"
+  | "gestion_sanitaria"
+  | "";
+
+export function getActiveSectionIds(mainLocation?: MainLocationType): string[] {
   const branch =
     mainLocation === "primer_nivel"
       ? "S2A"
@@ -10,6 +15,8 @@ export function getActiveSectionIds(
       ? "S2B"
       : mainLocation === "comunitario"
       ? "S2C"
+      : mainLocation === "gestion_sanitaria"
+      ? "S2D"
       : "S2A";
   return ["S0", "S1", branch, "S3", "S4", "S5"];
 }

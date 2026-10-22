@@ -460,11 +460,15 @@ export default function AdminPage() {
                     },
                     {
                       key: "hospital",
-                      label: "Segundo Nivel (Hospital Municipal / Provincial)",
+                      label: "Segundo Nivel (Hospital Nacional / Provincial / Municipal)",
                     },
                     {
                       key: "comunitario",
                       label: "Espacio u Organización Comunitaria",
+                    },
+                    {
+                      key: "gestion_sanitaria",
+                      label: "Gestión Sanitaria (Nacional / Provincial / Municipal)",
                     },
                   ].map((item) => (
                     <div

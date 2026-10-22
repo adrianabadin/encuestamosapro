@@ -129,17 +129,19 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
     expect(result.rejected).toHaveLength(1);
     expect(result.rejected[0].clientSubmissionId).toBe(invalidId);
 
-    // Re-syncing the same clientSubmissionId should be idempotent (duplicate = accepted, no double row)
+    // Re-syncing the same clientSubmissionId should update the existing record in place (progressive upsert S10)
     const retryResult = await syncSurveyResponsesBatch([
       {
         clientSubmissionId: validId,
         sourcePlatform: "android",
+        isComplete: true,
+        currentStep: "S5",
         consent: true,
         mainLocation: "hospital",
         section2B: {
-          tipoHospital: "provincial",
+          tipoHospital: "nacional",
           tarea: "enfermeria",
-          areaServicio: "Guardia General",
+          areaServicio: "Terapia Intensiva",
         },
         section3: {
           regionSanitaria: "XI",
@@ -154,10 +156,10 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
             { rank: 4, themeId: "financiamiento", themeLabel: "Financiamiento" },
             { rank: 5, themeId: "implementacion_hsi", themeLabel: "Implementación de HSI (Historia de Salud Integrada)" },
           ],
-          rank1Detail: { problema: "A", propuesta: "B" },
-          rank2Detail: { problema: "C", propuesta: "D" },
-          rank3Detail: { problema: "E", propuesta: "F" },
-          relacionZonal: "regular",
+          rank1Detail: { problema: "", propuesta: "" },
+          rank2Detail: { problema: "", propuesta: "" },
+          rank3Detail: { problema: "", propuesta: "" },
+          relacionZonal: "muy_buena",
         },
         section5: {
           interesaMesa: "no",
@@ -165,7 +167,42 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
       },
     ]);
     expect(retryResult.accepted).toContain(validId);
-    expect(retryResult.duplicates).toContain(validId);
+
+    // Also test saving a partial draft right after Step 1 (before S3/S4/S5 are filled) and then updating it when going back/forward
+    const draftId = `${testPrefix}draft_progressive`;
+    const step1Sync = await syncSurveyResponsesBatch([
+      {
+        clientSubmissionId: draftId,
+        isComplete: false,
+        currentStep: "S1",
+        consent: true,
+        mainLocation: "gestion_sanitaria",
+      },
+    ]);
+    expect(step1Sync.accepted).toContain(draftId);
+
+    const step2DSync = await syncSurveyResponsesBatch([
+      {
+        clientSubmissionId: draftId,
+        isComplete: false,
+        currentStep: "S2D",
+        consent: true,
+        mainLocation: "gestion_sanitaria",
+        section2D: {
+          ambitoGestion: "provincial",
+          rolGestion: "direccion",
+          areaEspacio: "Región Sanitaria VI",
+        },
+      },
+    ]);
+    expect(step2DSync.accepted).toContain(draftId);
+
+    const allSaved = await getAllSurveyResponses();
+    const savedDraft = allSaved.find((r) => r.clientSubmissionId === draftId);
+    expect(savedDraft).toBeDefined();
+    expect(savedDraft?.mainLocation).toBe("gestion_sanitaria");
+    expect(savedDraft?.payload.section2D?.areaEspacio).toBe("Región Sanitaria VI");
+    expect(savedDraft?.isComplete).toBe(false);
   });
 
   it("syncs unlinked contact submissions independently and aggregates stats + exports Excel/CSV", async () => {
@@ -199,7 +236,7 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
 
     const csv = buildCsvString(responses);
     expect(csv).toContain("La Plata");
-    expect(csv).toContain("Guardia General");
+    expect(csv).toContain("Terapia Intensiva");
 
     const xlsxBuf = buildExcelBuffer(responses, contacts);
     expect(xlsxBuf.byteLength).toBeGreaterThan(100);
