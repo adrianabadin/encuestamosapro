@@ -23,3 +23,4 @@ Branch: main | Delivery strategy: single-pr | Test runner: npm test (vitest)
   Clarifications:
   1. Stack Android: "React Native (Expo) en carpeta /android-app (Recomendado)"
   2. Modo Campo: "opcion 1 pero que vaya haciendo sync online cuando conecte" (Modo Relevador en Terreno con bandeja offline + sincronización automática en segundo plano apenas haya o recupere conexión).
+- **L2 (2026-10-22):** Fixed `npm run start` in `android-app/` (added missing `expo-asset`, `metro.config.js` with `watchFolders` for shared contracts, and `babel.config.js`; verified `Android Bundled 568 modules` via `expo export --platform android`) and updated root `package.json` `start` script to compatible standalone server runner.
