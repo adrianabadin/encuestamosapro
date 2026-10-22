@@ -19,8 +19,9 @@ coverage
 .env
 .env.*
 
-# Tests & IDE
+# Tests & IDE & Android subproject
 tests
+android-app
 vitest.config.ts
 .vscode
 *.log

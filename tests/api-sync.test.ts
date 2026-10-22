@@ -42,7 +42,6 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
 
   afterAll(async () => {
     await deleteTestRecordsByPrefix(testPrefix);
-    await getPool().end();
   });
 
   it("syncs survey responses idempotently (web & android offline queue) and rejects invalid items without losing valid ones", async () => {

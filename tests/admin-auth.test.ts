@@ -36,7 +36,6 @@ describe("Admin Authentication & First-User Approval Workflow (S11)", () => {
 
   afterAll(async () => {
     await deleteTestUsersByEmailPrefix("vitest_auth_");
-    await getPool().end();
   });
 
   it("auto-validates the very first registered user as admin when table is empty, and requires admin approval for subsequent users", async () => {
