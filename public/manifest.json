@@ -1,0 +1,10 @@
+{
+  "name": "MOSAPRO — Relevamiento Sanitario Provincial",
+  "short_name": "MOSAPRO",
+  "description": "Formulario de relevamiento sanitario territorial offline-first del Movimiento Sanitario Provincial.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f6f7",
+  "theme_color": "#567c7f",
+  "lang": "es-AR"
+}
