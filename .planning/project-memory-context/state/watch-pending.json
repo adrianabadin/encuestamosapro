@@ -1,0 +1,9 @@
+{
+  "next.config.ts": 1792703127943,
+  "src/components/MunicipioAutocomplete.tsx": 1792703055433,
+  "src/components/PriorityGrid.tsx": 1792703055434,
+  "src/lib/offline/sync-queue.ts": 1792703055471,
+  "src/app/page.tsx": 1792703132625,
+  "src/app/contacto/page.tsx": 1792703132626,
+  "src/app/r/[region]/page.tsx": 1792703132628
+}

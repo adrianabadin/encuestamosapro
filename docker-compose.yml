@@ -6,12 +6,12 @@ services:
     container_name: mosapro-relevamiento
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-3082}:3082"
     env_file:
       - .env
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3082
       - HOSTNAME=0.0.0.0
     extra_hosts:
       - "host.docker.internal:host-gateway"

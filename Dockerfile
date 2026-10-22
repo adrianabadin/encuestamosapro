@@ -32,7 +32,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
+ENV PORT=3082
 ENV HOSTNAME="0.0.0.0"
 
 # Create non-root user for security
@@ -46,9 +46,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3082
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/v1/survey || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3082/api/v1/survey || exit 1
 
 CMD ["node", "server.js"]

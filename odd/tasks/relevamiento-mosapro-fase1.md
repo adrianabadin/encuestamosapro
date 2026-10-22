@@ -76,3 +76,5 @@ Branch: feat/relevamiento-fase1 | Delivery strategy: single-pr | Test runner: np
   "falta el icono de mosapro busca el logo y hacce un favicon para la pagina."
 - **L5 (2026-10-22):** User requested optimized Docker setup:
   "nop primero armame un docker file para que se ejecute en un docker lo mas optimmizado posible"
+- **L6 (2026-10-22):** User requested port 3082:
+  "quiero que el servidor exponga el puerto 3082"
