@@ -40,6 +40,8 @@ Branch: feat/relevamiento-fase1 | Delivery strategy: single-pr | Test runner: np
   - "quiero que cada una de las respuestas se vaya actualizando en la base de datos para no perder informacion. en cada siguiente que se actualice la base de datos por detras. que permita volver atras y modificar pero que si se suspende la encuetra este la informacion que se llego a cargar."
 - **S11 (Admin Authentication, Registration & First-Admin User Approval):**
   - "el panel de admin debe estar protegido por email y contaseña. se pueden crear usuarios con un registrar ususario, pero solo el admin puede validar un usuario. el primer regiistro genera un usuario admin que luego seguira validando el resto de los usuarios."
+- **S12 (Optimized Production Docker Container):**
+  - "nop primero armame un docker file para que se ejecute en un docker lo mas optimmizado posible"
 
 ## Tasks
 
@@ -48,7 +50,8 @@ Branch: feat/relevamiento-fase1 | Delivery strategy: single-pr | Test runner: np
 - **T3** [S1, S2, S3, S4, S5, S6, S7, S8] (inline — fallback after `subagent_run` refused with `Writer session Git authority changed before admission` because `git init` was run mid-session) — Build MOSAPRO-branded public survey UI with conditional routing, PBA municipality autocomplete, 11+2 theme priority grid + "+ Agregar otra temática" modal/inline builder (mandatory title + description), dynamic 1°/2°/3° problem/proposal fields, offline IndexedDB queue & auto-sync, regional URL prefill (`?region=`), and unlinked `/contacto` page — `done` (commit `fa72211`, RED/GREEN `tests/ui-flow.test.ts` 3/3 passed)
 - **T4** [S9] (inline — fallback after `subagent_run` Git authority admission refusal) — Build Admin Panel (`/admin`) to edit existing questions/themes, add new questions, view real-time statistics by Región Sanitaria / nivel / temáticas, and export responses & contacts to Excel/CSV — `done` (commit `8f35da1`, `npx tsc --noEmit` + `npm test` 16/16 passed)
 - **T5** [S4, S5, S7, S8, S10] (inline — iterative requirement update) — Add 'Gestión sanitaria' (S1 -> S2D), add 'Gestión Nacional, Provincial, Municipal' & filterable free-text hospital services combobox in S2B, make S4.2-4.4 problem/proposal non-blocking, implement progressive background DB upsert on every step ('Siguiente'/'Anterior' with partial draft persistence), and center the unlinked contact CTA button — `done` (commit `ebac425`, RED/GREEN 18/18 tests passed)
-- **T6** [S2, S9, S11] (inline — iterative requirement update) — Implement Admin Authentication & User Approval (first registered user becomes validated admin; subsequent users require admin approval; protect `/api/v1/admin/*` and `/admin`), full Question Option & Modality Editor (edit/add/remove options, toggle '¿Cuál?' specifier, and switch question type between `single_choice`, `multi_choice`, `short_text`, `long_text`) reflected dynamically in `SurveyWizard`, AND fetch official MOSAPRO logo + favicon from `mosapro.com.ar` — `done` (commit `ec3c208`, RED/GREEN 19/19 tests passed)
+- **T6** [S2, S9, S11] (inline — iterative requirement update) — Implement Admin Authentication & User Approval (first registered user becomes validated admin; subsequent users require admin approval; protect `/api/v1/admin/*` and `/admin`), full Question Option & Modality Editor (edit/add/remove options, toggle '¿Cuál?' specifier, and switch question type between `single_choice`, `multi_choice`, `short_text`, `long_text`) reflected dynamically in `SurveyWizard`, AND fetch official MOSAPRO logo + favicon from `mosapro.com.ar` — `done` (commit `666b2fa`, RED/GREEN 19/19 tests passed)
+- **T7** [S12] (inline — deployment containerization) — Configure Next.js `output: "standalone"` and create multi-stage Alpine `Dockerfile`, `.dockerignore`, and `docker-compose.yml` for minimal production image footprint — `done` (commit `0975faf`, verified `npm run build` standalone `server.js` output + `npm test` 19/19 passed)
 
 ## Log
 
@@ -71,3 +74,5 @@ Branch: feat/relevamiento-fase1 | Delivery strategy: single-pr | Test runner: np
 - **L4 (2026-10-22):** User requirement updates:
   "el panel de admin debe estar protegido por email y contaseña. se pueden crear usuarios con un registrar ususario, pero solo el admin puede validar un usuario. el primer regiistro genera un usuario admin que luego seguira validando el resto de los usuarios. quiero que las preguntas con opciones tambien se puedan editar las opciones. e incluso cambiar el tipo opciones a campo libre o multiples opciones."
   "falta el icono de mosapro busca el logo y hacce un favicon para la pagina."
+- **L5 (2026-10-22):** User requested optimized Docker setup:
+  "nop primero armame un docker file para que se ejecute en un docker lo mas optimmizado posible"

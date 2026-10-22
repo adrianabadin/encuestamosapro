@@ -1,0 +1,27 @@
+# Git & Agent files
+.git
+.gitignore
+.atl
+.pi
+.planning
+.pmc
+odd
+README-SETUP.md
+
+# Dependencies & Build artifacts
+node_modules
+.next
+out
+build
+coverage
+
+# Local environment secrets (passed at runtime via env_file / -e)
+.env
+.env.*
+
+# Tests & IDE
+tests
+vitest.config.ts
+.vscode
+*.log
+npm-debug.log*
