@@ -1,0 +1,5 @@
+.worktrees/
+.planning/
+node_modules/
+graphify-out/
+.graphify_*.json

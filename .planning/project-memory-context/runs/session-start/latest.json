@@ -1,0 +1,95 @@
+{
+  "hasPmc": true,
+  "projectRoot": "c:\\Users\\aabad\\Documents\\CODE\\mosapro",
+  "status": {
+    "ok": true,
+    "command": "enrich-status",
+    "projectRoot": "c:\\Users\\aabad\\Documents\\CODE\\mosapro",
+    "configLocation": "c:\\Users\\aabad\\Documents\\CODE\\mosapro\\.pmc",
+    "agentType": "generic",
+    "installState": {
+      "installedAt": "2026-10-22T20:00:32.432Z"
+    },
+    "state": "finished",
+    "runtime": {
+      "pid": 21844,
+      "startedAt": "2026-10-22T20:01:08.601Z",
+      "heartbeatAt": "2026-10-22T20:01:10.048Z",
+      "finishedAt": "2026-10-22T20:01:10.048Z",
+      "staleAfterSeconds": 90,
+      "lastError": null
+    },
+    "sync": {
+      "state": "finished",
+      "pid": 20248,
+      "startedAt": "2026-10-22T20:01:17.042Z",
+      "heartbeatAt": "2026-10-22T20:01:55.817Z",
+      "finishedAt": "2026-10-22T20:01:55.826Z",
+      "lastError": null,
+      "summary": {
+        "synced": 9,
+        "errors": 0,
+        "pending": 0
+      }
+    },
+    "worklist": {
+      "pending": 0,
+      "enriched": 0,
+      "errors": 63,
+      "subagentQueued": 4
+    },
+    "subagentQueue": {
+      "total": 4,
+      "pending": 4,
+      "in_progress": 0,
+      "done": 0,
+      "error": 0
+    },
+    "lastSync": "2026-10-22T20:01:55.815Z"
+  },
+  "launch": {
+    "attempted": false,
+    "launchedEnrichment": false,
+    "launchedWatchdog": false,
+    "backend": "detached-node"
+  },
+  "refresh": {
+    "launchedRefresh": true,
+    "backend": "detached-node"
+  },
+  "watcher": {
+    "launchedWatcher": true,
+    "watcherPid": 15912,
+    "backend": "detached-node"
+  },
+  "syncPending": 0,
+  "subagentPending": 4,
+  "overview": [
+    {
+      "kind": "architecture-current",
+      "title": "Current architecture",
+      "summary": "Pattern: detected-structure. Entry points: none."
+    },
+    {
+      "kind": "structure-summary",
+      "title": "Project structure summary",
+      "summary": "Root directories: odd, public, src, tests."
+    },
+    {
+      "kind": "stack-runtime",
+      "title": "Project stack and runtime",
+      "summary": "Languages: typescript. Frameworks: next, react."
+    },
+    {
+      "kind": "dependencies-summary",
+      "title": "Dependency summary",
+      "summary": "Critical dependencies: next, react, zod."
+    }
+  ],
+  "snapshot": {
+    "dir": "c:\\Users\\aabad\\Documents\\CODE\\mosapro\\.planning\\project-memory-context\\runs\\session-start",
+    "jsonPath": "c:\\Users\\aabad\\Documents\\CODE\\mosapro\\.planning\\project-memory-context\\runs\\session-start\\latest.json",
+    "markdownPath": "c:\\Users\\aabad\\Documents\\CODE\\mosapro\\.planning\\project-memory-context\\runs\\session-start\\latest.md"
+  },
+  "warnings": []
+}

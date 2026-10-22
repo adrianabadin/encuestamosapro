@@ -1,0 +1,22 @@
+{
+  "memory_key": "project-context:project-requirements",
+  "title": "Project requirements",
+  "kind": "project-requirements",
+  "source_mode": "declared",
+  "summary": "",
+  "body": "- No declared requirements.",
+  "tags": [
+    "project-context",
+    "project:mosapro",
+    "requirements"
+  ],
+  "source_files": [
+    ".planning/project-memory-context/project-context/declared/project-requirements.json"
+  ],
+  "graph_refs": [],
+  "detected_sources": [],
+  "declared_sources": [],
+  "confidence": "high",
+  "content_hash": "75a4491d666cfc705e435b5d1a46bf618ba0dfa5cc63a9943eb3288493af5797",
+  "updated_at": "2026-10-22T20:00:32.770Z"
+}

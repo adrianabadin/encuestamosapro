@@ -1,0 +1,20 @@
+{
+  "memory_key": "project-context:structure-summary",
+  "title": "Project structure summary",
+  "kind": "structure-summary",
+  "source_mode": "detected",
+  "summary": "Root directories: odd, public, src, tests.",
+  "body": "- Root directories: odd, public, src, tests\n- Key subtrees: odd/tasks, src/app, src/components, src/lib\n- Entry points: Not detected",
+  "tags": [
+    "project-context",
+    "project:mosapro",
+    "structure"
+  ],
+  "source_files": [],
+  "graph_refs": [],
+  "detected_sources": [],
+  "declared_sources": [],
+  "confidence": "high",
+  "content_hash": "15d93b675bdf05b22b599f7efd31cd51df802a8bf112fda70d7411ecf6257ce7",
+  "updated_at": "2026-10-22T20:00:32.770Z"
+}

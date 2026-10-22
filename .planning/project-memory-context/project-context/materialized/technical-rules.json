@@ -1,0 +1,22 @@
+{
+  "memory_key": "project-context:technical-rules",
+  "title": "Technical rules",
+  "kind": "technical-rules",
+  "source_mode": "merged",
+  "summary": "",
+  "body": "",
+  "tags": [
+    "project-context",
+    "project:mosapro",
+    "rules"
+  ],
+  "source_files": [
+    "README.md"
+  ],
+  "graph_refs": [],
+  "detected_sources": [],
+  "declared_sources": [],
+  "confidence": "medium",
+  "content_hash": "121e144be867961386fcb79ce8585a11cf4d7226fabca4da9c4d3b3086ca36d7",
+  "updated_at": "2026-10-22T20:00:32.770Z"
+}

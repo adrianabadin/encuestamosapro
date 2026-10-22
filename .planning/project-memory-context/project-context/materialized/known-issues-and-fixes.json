@@ -1,0 +1,22 @@
+{
+  "memory_key": "project-context:known-issues-and-fixes",
+  "title": "Known issues and fixes",
+  "kind": "known-issues-and-fixes",
+  "source_mode": "declared",
+  "summary": "0 known issues recorded.",
+  "body": "- No known issues recorded.",
+  "tags": [
+    "project-context",
+    "project:mosapro",
+    "issues"
+  ],
+  "source_files": [
+    ".planning/project-memory-context/project-context/declared/known-issues-and-fixes.json"
+  ],
+  "graph_refs": [],
+  "detected_sources": [],
+  "declared_sources": [],
+  "confidence": "high",
+  "content_hash": "d73de14ad81c7ae6972dcefa2bd933d95f88ee109199828bd01c843d763b812d",
+  "updated_at": "2026-10-22T20:00:32.770Z"
+}

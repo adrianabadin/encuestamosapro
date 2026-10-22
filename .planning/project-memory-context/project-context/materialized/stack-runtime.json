@@ -1,0 +1,23 @@
+{
+  "memory_key": "project-context:stack-runtime",
+  "title": "Project stack and runtime",
+  "kind": "stack-runtime",
+  "source_mode": "detected",
+  "summary": "Languages: typescript. Frameworks: next, react.",
+  "body": "- Languages: typescript\n- Runtimes: node\n- Frameworks: next, react\n- Package managers: Not detected",
+  "tags": [
+    "project-context",
+    "project:mosapro",
+    "stack"
+  ],
+  "source_files": [
+    "package.json",
+    "tsconfig.json"
+  ],
+  "graph_refs": [],
+  "detected_sources": [],
+  "declared_sources": [],
+  "confidence": "high",
+  "content_hash": "cd46014ba490a023fcf67d0b6beb4c292c8c5552425ce999e1a42c676b9101b2",
+  "updated_at": "2026-10-22T20:00:32.770Z"
+}

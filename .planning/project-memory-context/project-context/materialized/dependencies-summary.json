@@ -1,0 +1,22 @@
+{
+  "memory_key": "project-context:dependencies-summary",
+  "title": "Dependency summary",
+  "kind": "dependencies-summary",
+  "source_mode": "detected",
+  "summary": "Critical dependencies: next, react, zod.",
+  "body": "- Critical: next, react, zod\n- Testing: vitest",
+  "tags": [
+    "project-context",
+    "project:mosapro",
+    "dependencies"
+  ],
+  "source_files": [
+    "package.json"
+  ],
+  "graph_refs": [],
+  "detected_sources": [],
+  "declared_sources": [],
+  "confidence": "high",
+  "content_hash": "22a52e45f109ed32ac064c22274827fbab542e015d8c46864db615fec2900d06",
+  "updated_at": "2026-10-22T20:00:32.770Z"
+}
