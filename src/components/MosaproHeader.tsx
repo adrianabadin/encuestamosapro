@@ -128,15 +128,17 @@ export function MosaproHeader({ showAdminLink = true }: MosaproHeaderProps) {
       {/* Main Brand Bar */}
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-11 h-11 rounded-lg bg-[#567c7f] flex items-center justify-center text-white font-black text-lg shadow-sm group-hover:bg-[#4f7478] transition">
-            MP
-          </div>
+          <img
+            src="/logo-mosapro.png"
+            alt="Logo MOSAPRO — Movimiento Sanitario Provincial"
+            className="w-12 h-12 object-contain shrink-0 drop-shadow-xs group-hover:scale-105 transition"
+          />
           <div>
             <div className="text-lg md:text-xl font-extrabold text-[#567c7f] tracking-tight leading-tight">
               MOSAPRO
             </div>
             <div className="text-xs text-slate-600 font-medium">
-              Relevamiento Sanitario Territorial
+              Movimiento Sanitario Provincial · Relevamiento Territorial
             </div>
           </div>
         </Link>

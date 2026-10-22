@@ -1,11 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   getSurveyStats,
   getAllSurveyResponses,
   getAllContactSubmissions,
 } from "@/lib/db/repository";
+import { getAuthenticatedSessionUser } from "@/lib/auth/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const user = await getAuthenticatedSessionUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "No autorizado. Iniciá sesión en el panel." },
+      { status: 401 }
+    );
+  }
   try {
     const [stats, recentResponses, recentContacts] = await Promise.all([
       getSurveyStats(),

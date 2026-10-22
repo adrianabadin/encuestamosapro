@@ -4,8 +4,16 @@ import {
   getAllContactSubmissions,
 } from "@/lib/db/repository";
 import { buildCsvString, buildExcelBuffer } from "@/lib/export/exporter";
+import { getAuthenticatedSessionUser } from "@/lib/auth/auth";
 
 export async function GET(req: NextRequest) {
+  const user = await getAuthenticatedSessionUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "No autorizado. Iniciá sesión en el panel." },
+      { status: 401 }
+    );
+  }
   try {
     const format = req.nextUrl.searchParams.get("format") || "xlsx";
     const [responses, contacts] = await Promise.all([

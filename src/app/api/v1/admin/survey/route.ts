@@ -3,22 +3,43 @@ import {
   getActiveSurveySchema,
   updateActiveSurveySchema,
 } from "@/lib/db/postgres";
-import { DEFAULT_SURVEY_SCHEMA, SurveySchema } from "@/lib/survey/default-schema";
+import {
+  DEFAULT_SURVEY_SCHEMA,
+  SurveySchema,
+} from "@/lib/survey/default-schema";
+import { getAuthenticatedSessionUser } from "@/lib/auth/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const user = await getAuthenticatedSessionUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "No autorizado. Iniciá sesión en el panel." },
+      { status: 401 }
+    );
+  }
   try {
     const schema = await getActiveSurveySchema();
     return NextResponse.json({ ok: true, survey: schema });
   } catch (error) {
     console.error("Error in GET /api/v1/admin/survey:", error);
     return NextResponse.json(
-      { ok: false, error: "No se pudo cargar la configuración del relevamiento." },
+      {
+        ok: false,
+        error: "No se pudo cargar la configuración del relevamiento.",
+      },
       { status: 500 }
     );
   }
 }
 
 export async function PUT(req: NextRequest) {
+  const user = await getAuthenticatedSessionUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "No autorizado. Iniciá sesión en el panel." },
+      { status: 401 }
+    );
+  }
   try {
     const body = await req.json();
     if (body?.resetToDefault === true) {

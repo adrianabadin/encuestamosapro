@@ -128,6 +128,16 @@ export async function ensureDbInitialized(): Promise<void> {
       created_at_client TIMESTAMPTZ,
       synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS mosapro_users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(200) UNIQUE NOT NULL,
+      nombre VARCHAR(200) NOT NULL DEFAULT '',
+      password_hash VARCHAR(255) NOT NULL,
+      role VARCHAR(32) NOT NULL DEFAULT 'user',
+      is_validated BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   try {

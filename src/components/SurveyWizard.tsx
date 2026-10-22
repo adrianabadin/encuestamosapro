@@ -255,7 +255,15 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     schema.sections.find((s) => s.id === currentSectionId) ||
     DEFAULT_SURVEY_SCHEMA.sections[0];
 
-  const getQ = (id: string, fallbackLabel: string): SurveyQuestion => {
+  const getQ = (
+    id: string,
+    fallbackLabel: string,
+    fallbackOptions?: {
+      value: string;
+      label: string;
+      requiresSpecify?: boolean;
+    }[]
+  ): SurveyQuestion => {
     for (const sec of schema.sections) {
       const q = sec.questions.find((item) => item.id === id);
       if (q) return q;
@@ -265,10 +273,179 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
       sectionId: currentSectionId,
       code: "",
       label: fallbackLabel,
-      type: "short_text",
+      type: fallbackOptions ? "single_choice" : "short_text",
       required: true,
       order: 1,
+      options: fallbackOptions,
     };
+  };
+
+  // Flexible question renderer that respects admin changes to options or modality (single_choice, multi_choice, short_text, long_text)
+  const renderFlexibleQuestionControl = (params: {
+    questionId: string;
+    fallbackLabel: string;
+    fallbackOptions?: {
+      value: string;
+      label: string;
+      requiresSpecify?: boolean;
+    }[];
+    value: string;
+    onChange: (val: string) => void;
+    specifyValue?: string;
+    onChangeSpecify?: (val: string) => void;
+    specifyPlaceholder?: string;
+    gridCols?: string;
+  }) => {
+    const q = getQ(
+      params.questionId,
+      params.fallbackLabel,
+      params.fallbackOptions
+    );
+    const opts =
+      q.options && q.options.length > 0
+        ? q.options
+        : params.fallbackOptions || [];
+
+    if (q.type === "short_text") {
+      return (
+        <input
+          type="text"
+          value={params.value}
+          onChange={(e) => params.onChange(e.target.value)}
+          placeholder="Escribí tu respuesta..."
+          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] outline-none text-sm bg-white"
+        />
+      );
+    }
+
+    if (q.type === "long_text") {
+      return (
+        <textarea
+          rows={3}
+          value={params.value}
+          onChange={(e) => params.onChange(e.target.value)}
+          placeholder="Escribí tu respuesta..."
+          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] outline-none text-sm bg-white"
+        />
+      );
+    }
+
+    if (q.type === "multi_choice") {
+      const selectedList = params.value
+        ? params.value
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+      const needsSpecify = opts.some(
+        (o) =>
+          selectedList.includes(o.value) &&
+          (o.requiresSpecify || o.value === "otra" || o.value === "otro")
+      );
+      return (
+        <div className="space-y-3">
+          <div
+            className={
+              params.gridCols || "grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+            }
+          >
+            {opts.map((opt) => {
+              const checked = selectedList.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    const next = checked
+                      ? selectedList.filter((x) => x !== opt.value)
+                      : [...selectedList, opt.value];
+                    params.onChange(next.join(", "));
+                  }}
+                  className={`p-3.5 rounded-xl border text-left text-sm flex items-center justify-between gap-2 transition cursor-pointer ${
+                    checked
+                      ? "border-[#567c7f] bg-[#567c7f]/12 text-[#1f2f40] font-bold"
+                      : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    readOnly
+                    className="w-4 h-4 accent-[#567c7f] pointer-events-none"
+                  />
+                </button>
+              );
+            })}
+          </div>
+          {needsSpecify && params.onChangeSpecify && (
+            <div className="bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
+              <label className="block text-xs font-bold text-[#3f5f61] mb-1">
+                {q.specifyLabel || "¿Cuál?"}{" "}
+                <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                value={params.specifyValue || ""}
+                onChange={(e) => params.onChangeSpecify!(e.target.value)}
+                placeholder={params.specifyPlaceholder || "Especificá ¿Cuál?..."}
+                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
+              />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Default: single_choice
+    const selectedOpt = opts.find((o) => o.value === params.value);
+    const needsSpecify =
+      selectedOpt?.requiresSpecify ||
+      params.value === "otra" ||
+      params.value === "otro";
+
+    return (
+      <div className="space-y-3">
+        <div
+          className={
+            params.gridCols || "grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+          }
+        >
+          {opts.map((opt) => {
+            const selected = params.value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => params.onChange(opt.value)}
+                className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
+                  selected
+                    ? "border-[#567c7f] bg-[#567c7f] text-white font-bold shadow-xs"
+                    : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        {needsSpecify && params.onChangeSpecify && (
+          <div className="bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
+            <label className="block text-xs font-bold text-[#3f5f61] mb-1">
+              {q.specifyLabel || "¿Cuál?"}{" "}
+              <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              value={params.specifyValue || ""}
+              onChange={(e) => params.onChangeSpecify!(e.target.value)}
+              placeholder={params.specifyPlaceholder || "Especificá ¿Cuál?..."}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
+            />
+          </div>
+        )}
+      </div>
+    );
   };
 
   const extraSectionQuestions = (currentSection?.questions || []).filter(
@@ -1008,44 +1185,18 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
             <label className="block text-base font-bold text-slate-900">
               1. {getQ("q_2a_tarea", "Tu tarea:").label}
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {(
-                getQ("q_2a_tarea", "").options ||
-                DEFAULT_SURVEY_SCHEMA.sections[2].questions[0].options!
-              ).map((opt) => {
-                const selected = s2aTarea === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setS2aTarea(opt.value)}
-                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
-                      selected
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold shadow-xs"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {s2aTarea === "otra" && (
-              <div className="bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
-                <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                  ¿Cuál? Especificá tu tarea{" "}
-                  <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={s2aTareaOtra}
-                  onChange={(e) => setS2aTareaOtra(e.target.value)}
-                  placeholder="Describí brevemente tu tarea..."
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
-                />
-              </div>
-            )}
+            {renderFlexibleQuestionControl({
+              questionId: "q_2a_tarea",
+              fallbackLabel: "Tu tarea:",
+              fallbackOptions:
+                DEFAULT_SURVEY_SCHEMA.sections.find((s) => s.id === "S2A")
+                  ?.questions[0].options,
+              value: s2aTarea,
+              onChange: setS2aTarea,
+              specifyValue: s2aTareaOtra,
+              onChangeSpecify: setS2aTareaOtra,
+              specifyPlaceholder: "Describí brevemente tu tarea...",
+            })}
           </div>
         )}
 
@@ -1062,67 +1213,36 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   ).label
                 }
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
+              {renderFlexibleQuestionControl({
+                questionId: "q_2b_tipo_hospital",
+                fallbackLabel: "Dependencia / Gestión del hospital:",
+                fallbackOptions: [
                   { value: "nacional", label: "Gestión Nacional" },
                   { value: "provincial", label: "Gestión Provincial" },
                   { value: "municipal", label: "Gestión Municipal" },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setS2bTipoHospital(opt.value)}
-                    className={`p-3.5 rounded-xl border text-center text-sm transition cursor-pointer ${
-                      s2bTipoHospital === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+                ],
+                value: s2bTipoHospital,
+                onChange: setS2bTipoHospital,
+                gridCols: "grid grid-cols-1 sm:grid-cols-3 gap-3",
+              })}
             </div>
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
                 2. {getQ("q_2b_tarea", "Tu tarea:").label}
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {(
-                  getQ("q_2b_tarea", "").options ||
-                  DEFAULT_SURVEY_SCHEMA.sections[3].questions[1].options!
-                ).map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setS2bTarea(opt.value)}
-                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
-                      s2bTarea === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {s2bTarea === "otra" && (
-                <div className="mt-3 bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
-                  <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                    ¿Cuál? Especificá tu tarea{" "}
-                    <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={s2bTareaOtra}
-                    onChange={(e) => setS2bTareaOtra(e.target.value)}
-                    placeholder="Describí brevemente tu tarea..."
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
-                  />
-                </div>
-              )}
+              {renderFlexibleQuestionControl({
+                questionId: "q_2b_tarea",
+                fallbackLabel: "Tu tarea:",
+                fallbackOptions:
+                  DEFAULT_SURVEY_SCHEMA.sections.find((s) => s.id === "S2B")
+                    ?.questions[1].options,
+                value: s2bTarea,
+                onChange: setS2bTarea,
+                specifyValue: s2bTareaOtra,
+                onChangeSpecify: setS2bTareaOtra,
+                specifyPlaceholder: "Describí brevemente tu tarea...",
+              })}
             </div>
 
             <div>
@@ -1141,6 +1261,11 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               <HospitalServiceCombobox
                 value={s2bAreaServicio}
                 onChange={setS2bAreaServicio}
+                options={
+                  getQ("q_2b_area_servicio", "").options?.length
+                    ? getQ("q_2b_area_servicio", "").options!.map((o) => o.label)
+                    : undefined
+                }
               />
             </div>
           </div>
@@ -1153,80 +1278,36 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               <label className="block text-base font-bold text-slate-900 mb-2.5">
                 1. {getQ("q_2c_tipo_org", "Tipo de organización:").label}
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {(
-                  getQ("q_2c_tipo_org", "").options ||
-                  DEFAULT_SURVEY_SCHEMA.sections[4].questions[0].options!
-                ).map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setS2cTipoOrg(opt.value)}
-                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
-                      s2cTipoOrg === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              {s2cTipoOrg === "otra" && (
-                <div className="mt-3 bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
-                  <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                    ¿Cuál? Especificá el tipo de organización{" "}
-                    <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={s2cTipoOrgOtra}
-                    onChange={(e) => setS2cTipoOrgOtra(e.target.value)}
-                    placeholder="Describí el espacio u organización..."
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
-                  />
-                </div>
-              )}
+              {renderFlexibleQuestionControl({
+                questionId: "q_2c_tipo_org",
+                fallbackLabel: "Tipo de organización:",
+                fallbackOptions:
+                  DEFAULT_SURVEY_SCHEMA.sections.find((s) => s.id === "S2C")
+                    ?.questions[0].options,
+                value: s2cTipoOrg,
+                onChange: setS2cTipoOrg,
+                specifyValue: s2cTipoOrgOtra,
+                onChangeSpecify: setS2cTipoOrgOtra,
+                specifyPlaceholder: "Describí el espacio u organización...",
+              })}
             </div>
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
                 2. {getQ("q_2c_rol", "Tu rol:").label}
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {(
-                  getQ("q_2c_rol", "").options ||
-                  DEFAULT_SURVEY_SCHEMA.sections[4].questions[1].options!
-                ).map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setS2cRol(opt.value)}
-                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
-                      s2cRol === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              {s2cRol === "otro" && (
-                <div className="mt-3 bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
-                  <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                    ¿Cuál? Especificá tu rol{" "}
-                    <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={s2cRolOtro}
-                    onChange={(e) => setS2cRolOtro(e.target.value)}
-                    placeholder="Describí tu rol..."
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
-                  />
-                </div>
-              )}
+              {renderFlexibleQuestionControl({
+                questionId: "q_2c_rol",
+                fallbackLabel: "Tu rol:",
+                fallbackOptions:
+                  DEFAULT_SURVEY_SCHEMA.sections.find((s) => s.id === "S2C")
+                    ?.questions[1].options,
+                value: s2cRol,
+                onChange: setS2cRol,
+                specifyValue: s2cRolOtro,
+                onChangeSpecify: setS2cRolOtro,
+                specifyPlaceholder: "Describí tu rol...",
+              })}
             </div>
           </div>
         )}
@@ -1238,82 +1319,36 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               <label className="block text-base font-bold text-slate-900 mb-2.5">
                 1. {getQ("q_2d_ambito", "Ámbito de gestión:").label}
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
+              {renderFlexibleQuestionControl({
+                questionId: "q_2d_ambito",
+                fallbackLabel: "Ámbito de gestión:",
+                fallbackOptions: [
                   { value: "nacional", label: "Gestión Nacional" },
                   { value: "provincial", label: "Gestión Provincial" },
                   { value: "municipal", label: "Gestión Municipal" },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setS2dAmbito(opt.value)}
-                    className={`p-3.5 rounded-xl border text-center text-sm transition cursor-pointer ${
-                      s2dAmbito === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+                ],
+                value: s2dAmbito,
+                onChange: setS2dAmbito,
+                gridCols: "grid grid-cols-1 sm:grid-cols-3 gap-3",
+              })}
             </div>
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
                 2. {getQ("q_2d_rol", "Tu función o rol:").label}
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {[
-                  {
-                    value: "direccion_conduccion",
-                    label: "Dirección / Secretaría / Coordinación",
-                  },
-                  {
-                    value: "equipo_tecnico",
-                    label: "Equipo técnico / profesional de gestión",
-                  },
-                  {
-                    value: "supervision_programa",
-                    label: "Referente de programa o red territorial",
-                  },
-                  {
-                    value: "administrativo_logistica",
-                    label: "Administración / compras / sistemas / logística",
-                  },
-                  { value: "otra", label: "Otra" },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setS2dRol(opt.value)}
-                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
-                      s2dRol === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {s2dRol === "otra" && (
-                <div className="mt-3 bg-[#f3f6f7] p-4 rounded-xl border border-[#567c7f]/30">
-                  <label className="block text-xs font-bold text-[#3f5f61] mb-1">
-                    ¿Cuál? Especificá tu función o rol{" "}
-                    <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={s2dRolOtra}
-                    onChange={(e) => setS2dRolOtra(e.target.value)}
-                    placeholder="Describí tu función en gestión..."
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-[#567c7f] outline-none text-sm"
-                  />
-                </div>
-              )}
+              {renderFlexibleQuestionControl({
+                questionId: "q_2d_rol",
+                fallbackLabel: "Tu función o rol:",
+                fallbackOptions:
+                  DEFAULT_SURVEY_SCHEMA.sections.find((s) => s.id === "S2D")
+                    ?.questions[1].options,
+                value: s2dRol,
+                onChange: setS2dRol,
+                specifyValue: s2dRolOtra,
+                onChangeSpecify: setS2dRolOtra,
+                specifyPlaceholder: "Describí tu función en gestión...",
+              })}
             </div>
 
             <div>
@@ -1326,13 +1361,12 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   ).label
                 }
               </label>
-              <input
-                type="text"
-                value={s2dArea}
-                onChange={(e) => setS2dArea(e.target.value)}
-                placeholder="Ej. Secretaría de Salud Municipal, Región Sanitaria VI, Dirección de Redes..."
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] outline-none text-sm"
-              />
+              {renderFlexibleQuestionControl({
+                questionId: "q_2d_area",
+                fallbackLabel: "Área, dirección, secretaría o Región Sanitaria:",
+                value: s2dArea,
+                onChange: setS2dArea,
+              })}
             </div>
           </div>
         )}
@@ -1383,27 +1417,18 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               <label className="block text-base font-bold text-slate-900 mb-2.5">
                 3. {getQ("q_3_antiguedad", "Antigüedad en la tarea:").label}
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {[
+              {renderFlexibleQuestionControl({
+                questionId: "q_3_antiguedad",
+                fallbackLabel: "Antigüedad en la tarea:",
+                fallbackOptions: [
                   { value: "menos_de_5", label: "Menos de 5 años" },
                   { value: "5_a_10", label: "5 a 10 años" },
                   { value: "11_a_20", label: "11 a 20 años" },
                   { value: "mas_de_20", label: "Más de 20 años" },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setAntiguedad(opt.value)}
-                    className={`p-3.5 rounded-xl border text-left text-sm transition cursor-pointer ${
-                      antiguedad === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+                ],
+                value: antiguedad,
+                onChange: setAntiguedad,
+              })}
             </div>
           </div>
         )}
@@ -1541,28 +1566,20 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   ).label
                 }
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
-                {[
+              {renderFlexibleQuestionControl({
+                questionId: "q_4_relacion_zonal",
+                fallbackLabel: "Relación zonal:",
+                fallbackOptions: [
                   { value: "muy_buena", label: "Muy buena" },
                   { value: "buena", label: "Buena" },
                   { value: "regular", label: "Regular" },
                   { value: "mala", label: "Mala" },
                   { value: "no_se", label: "No sé" },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setRelacionZonal(opt.value)}
-                    className={`p-3 rounded-xl border text-center text-sm transition cursor-pointer ${
-                      relacionZonal === opt.value
-                        ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
-                        : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+                ],
+                value: relacionZonal,
+                onChange: setRelacionZonal,
+                gridCols: "grid grid-cols-1 sm:grid-cols-5 gap-2.5",
+              })}
             </div>
           </div>
         )}
