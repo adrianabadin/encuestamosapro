@@ -24,14 +24,31 @@ export class MemoryKeyValueAdapter implements KeyValueStorageAdapter {
   async removeItem(key: string): Promise<void> {
     this.map.delete(key);
   }
+  /** Snapshot of every stored key/value pair (used by tests to inspect contents). */
+  entries(): Array<[string, string]> {
+    return Array.from(this.map.entries());
+  }
 }
 
 const KEY_PENDING_RESPONSES = "mosapro_android_pending_responses_v1";
+/** Legacy key of the plain-text pending-contact list (migrated into secure storage, then removed). */
 const KEY_PENDING_CONTACTS = "mosapro_android_pending_contacts_v1";
+/** Regular storage only holds the ordered list of pending contact ids. */
+const KEY_PENDING_CONTACT_IDS = "mosapro_android_pending_contact_ids_v1";
+/** Secure-store key prefix: one encrypted entry per pending contact (values stay small). */
+const KEY_SECURE_CONTACT_PREFIX = "mosapro_android_secure_contact_v1_";
 const KEY_SYNCED_COUNT = "mosapro_android_synced_count_v1";
 const KEY_CACHED_SCHEMA = "mosapro_android_cached_schema_v2";
 const KEY_ACTIVE_DRAFT = "mosapro_android_active_draft_v2";
 const KEY_FIELD_SETTINGS = "mosapro_android_field_settings_v1";
+
+/**
+ * Secure-store keys must be alphanumeric plus `.`, `-`, `_` — our contact ids
+ * (prefix + expo-crypto UUID) satisfy that, so this key is always valid.
+ */
+function secureContactKey(contactId: string): string {
+  return `${KEY_SECURE_CONTACT_PREFIX}${contactId}`;
+}
 
 export interface FieldSurveyorSettings {
   defaultRegion: string;
@@ -49,17 +66,22 @@ export interface QueueSummary {
 
 export class AndroidOfflineSyncManager {
   private storage: KeyValueStorageAdapter;
+  private secureStorage: KeyValueStorageAdapter;
   private baseUrl: string;
   private fetchImpl: typeof fetch;
   private isFlushing = false;
   private lastSyncedAt: string | null = null;
+  private legacyContactsMigration: Promise<void> | null = null;
 
   constructor(options: {
     storage: KeyValueStorageAdapter;
+    /** Required for contacts: pending contact PII is only ever written here. */
+    secureStorage: KeyValueStorageAdapter;
     baseUrl: string;
     fetchImpl?: typeof fetch;
   }) {
     this.storage = options.storage;
+    this.secureStorage = options.secureStorage;
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
     this.fetchImpl = options.fetchImpl || fetch;
   }
@@ -137,13 +159,69 @@ export class AndroidOfflineSyncManager {
   }
 
   async getPendingContacts(): Promise<ContactSubmissionPayload[]> {
-    const raw = await this.storage.getItem(KEY_PENDING_CONTACTS);
+    await this.ensureLegacyContactsMigrated();
+    const ids = await this.getPendingContactIds();
+    const contacts: ContactSubmissionPayload[] = [];
+    for (const id of ids) {
+      const raw = await this.secureStorage.getItem(secureContactKey(id));
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw) as ContactSubmissionPayload;
+        if (parsed && parsed.clientSubmissionId === id) {
+          contacts.push(parsed);
+        }
+      } catch {
+        // skip unreadable entry
+      }
+    }
+    return contacts;
+  }
+
+  private async getPendingContactIds(): Promise<string[]> {
+    const raw = await this.storage.getItem(KEY_PENDING_CONTACT_IDS);
     if (!raw) return [];
     try {
-      return JSON.parse(raw) as ContactSubmissionPayload[];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((id): id is string => typeof id === "string");
     } catch {
       return [];
     }
+  }
+
+  /** Runs once per instance: moves any legacy plain-text contact list into secure storage. */
+  private ensureLegacyContactsMigrated(): Promise<void> {
+    if (!this.legacyContactsMigration) {
+      this.legacyContactsMigration = this.migrateLegacyContacts();
+    }
+    return this.legacyContactsMigration;
+  }
+
+  private async migrateLegacyContacts(): Promise<void> {
+    const legacyRaw = await this.storage.getItem(KEY_PENDING_CONTACTS);
+    if (legacyRaw === null) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(legacyRaw);
+    } catch {
+      // Malformed legacy payload: leave it untouched rather than destroy data.
+      return;
+    }
+    if (!Array.isArray(parsed)) return;
+
+    const ids = await this.getPendingContactIds();
+    for (const item of parsed) {
+      if (!item || typeof item !== "object") continue;
+      const id = (item as ContactSubmissionPayload).clientSubmissionId;
+      if (typeof id !== "string" || !id) continue;
+      const secureKey = secureContactKey(id);
+      if ((await this.secureStorage.getItem(secureKey)) === null) {
+        await this.secureStorage.setItem(secureKey, JSON.stringify(item));
+      }
+      if (!ids.includes(id)) ids.push(id);
+    }
+    await this.storage.setItem(KEY_PENDING_CONTACT_IDS, JSON.stringify(ids));
+    await this.storage.removeItem(KEY_PENDING_CONTACTS);
   }
 
   private async savePendingResponses(
@@ -155,7 +233,19 @@ export class AndroidOfflineSyncManager {
   private async savePendingContacts(
     list: ContactSubmissionPayload[]
   ): Promise<void> {
-    await this.storage.setItem(KEY_PENDING_CONTACTS, JSON.stringify(list));
+    // PII goes to secure storage, one entry per contact; plain storage only
+    // keeps the ordered list of pending contact ids.
+    const ids: string[] = [];
+    for (const contact of list) {
+      const id = contact.clientSubmissionId;
+      if (ids.includes(id)) continue;
+      ids.push(id);
+      await this.secureStorage.setItem(
+        secureContactKey(id),
+        JSON.stringify(contact)
+      );
+    }
+    await this.storage.setItem(KEY_PENDING_CONTACT_IDS, JSON.stringify(ids));
   }
 
   async saveAndTrySyncResponse(
@@ -184,6 +274,7 @@ export class AndroidOfflineSyncManager {
   async saveAndTrySyncContact(
     payload: ContactSubmissionPayload
   ): Promise<{ syncedNow: boolean }> {
+    await this.ensureLegacyContactsMigrated();
     const existing = await this.getPendingContacts();
     const idx = existing.findIndex(
       (item) => item.clientSubmissionId === payload.clientSubmissionId
@@ -266,6 +357,11 @@ export class AndroidOfflineSyncManager {
               const remaining = pendingContacts.filter(
                 (c) => !acceptedSet.has(c.clientSubmissionId)
               );
+              // Accepted contacts leave the queue: drop only their ids and
+              // delete their secure entries.
+              for (const id of accepted) {
+                await this.secureStorage.removeItem(secureContactKey(id));
+              }
               await this.savePendingContacts(remaining);
               syncedContacts = accepted.length;
               this.lastSyncedAt = new Date().toISOString();

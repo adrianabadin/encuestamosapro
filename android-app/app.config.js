@@ -68,6 +68,6 @@ module.exports = {
       },
       permissions: ["INTERNET", "ACCESS_NETWORK_STATE"],
     },
-    plugins: [],
+    plugins: ["expo-secure-store"],
   },
 };

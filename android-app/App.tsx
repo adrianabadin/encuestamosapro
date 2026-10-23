@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView, StyleSheet, View, Text, Image } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import NetInfo from "@react-native-community/netinfo";
 import {
   AndroidOfflineSyncManager,
@@ -24,6 +25,14 @@ const asyncStorageAdapter: KeyValueStorageAdapter = {
   removeItem: (key) => AsyncStorage.removeItem(key),
 };
 
+// Encrypted device storage (expo-secure-store): holds pending contact PII
+// (one key per contact) so it is never persisted in plain AsyncStorage.
+const secureStorageAdapter: KeyValueStorageAdapter = {
+  getItem: (key) => SecureStore.getItemAsync(key),
+  setItem: (key, value) => SecureStore.setItemAsync(key, value),
+  removeItem: (key) => SecureStore.deleteItemAsync(key),
+};
+
 // Fixed server URL injected exclusively from parent ../.env (SERVER_URL), defaulting to https://encuestamosapro.thecodersteam.com
 const FIXED_BACKEND_URL: string =
   process.env.EXPO_PUBLIC_SERVER_URL ||
@@ -33,6 +42,7 @@ export default function App() {
   const managerRef = useRef(
     new AndroidOfflineSyncManager({
       storage: asyncStorageAdapter,
+      secureStorage: secureStorageAdapter,
       baseUrl: FIXED_BACKEND_URL,
     })
   );
@@ -159,7 +169,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" backgroundColor="#3f5f61" />
+      <StatusBar style="light" />
 
       {/* Top Institutional App Bar */}
       <View style={styles.appBar}>

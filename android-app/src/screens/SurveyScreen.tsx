@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
 } from "react-native";
+import { randomUUID } from "expo-crypto";
 import {
   DEFAULT_SURVEY_SCHEMA,
   DEFAULT_HOSPITAL_SERVICES,
@@ -55,7 +56,9 @@ const BUILTIN_QUESTION_IDS = new Set([
 const RANKS = [1, 2, 3, 4, 5];
 
 function makeUuid(): string {
-  return `and_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  // Cryptographically secure UUID (expo-crypto); the `and_` prefix keeps ids
+  // readable and stays valid for storage keys (alphanumeric, `.`, `-`, `_`).
+  return `and_${randomUUID()}`;
 }
 
 interface SurveyScreenProps {

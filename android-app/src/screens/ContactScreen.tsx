@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
 } from "react-native";
+import { randomUUID } from "expo-crypto";
 import {
   REGIONES_SANITARIAS,
   MUNICIPIOS_PBA,
@@ -17,7 +18,9 @@ import {
 } from "../shared/contracts";
 
 function makeContactUuid(): string {
-  return `cnt_and_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  // Cryptographically secure UUID (expo-crypto); the `cnt_and_` prefix stays
+  // valid for storage keys (alphanumeric, `.`, `-`, `_`).
+  return `cnt_and_${randomUUID()}`;
 }
 
 interface ContactScreenProps {
