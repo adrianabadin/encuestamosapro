@@ -64,6 +64,10 @@ export interface QueueSummary {
   lastSyncedAt: string | null;
 }
 
+// Items per sync request; below the server cap (MAX_SYNC_BATCH_ITEMS = 50)
+// and far below its 1 MB body limit for typical survey payloads.
+export const SYNC_CHUNK_SIZE = 25;
+
 export class AndroidOfflineSyncManager {
   private storage: KeyValueStorageAdapter;
   private secureStorage: KeyValueStorageAdapter;
@@ -310,65 +314,41 @@ export class AndroidOfflineSyncManager {
     try {
       const pendingResponses = await this.getPendingResponses();
       if (pendingResponses.length > 0) {
-        try {
-          const res = await this.fetchImpl(
-            `${this.baseUrl}/api/v1/sync/responses`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ items: pendingResponses }),
-            }
+        const accepted = await this.postInChunks(
+          "/api/v1/sync/responses",
+          pendingResponses
+        );
+        if (accepted.length > 0) {
+          const acceptedSet = new Set(accepted);
+          const remaining = pendingResponses.filter(
+            (r) => !acceptedSet.has(r.clientSubmissionId)
           );
-          if (res.ok) {
-            const data = await res.json();
-            const accepted: string[] = data?.accepted || [];
-            if (accepted.length > 0) {
-              const acceptedSet = new Set(accepted);
-              const remaining = pendingResponses.filter(
-                (r) => !acceptedSet.has(r.clientSubmissionId)
-              );
-              await this.savePendingResponses(remaining);
-              syncedResponses = accepted.length;
-              await this.incrementSyncedCount(accepted.length);
-              this.lastSyncedAt = new Date().toISOString();
-            }
-          }
-        } catch {
-          // Offline or unreachable: keep in local queue
+          await this.savePendingResponses(remaining);
+          syncedResponses = accepted.length;
+          await this.incrementSyncedCount(accepted.length);
+          this.lastSyncedAt = new Date().toISOString();
         }
       }
 
       const pendingContacts = await this.getPendingContacts();
       if (pendingContacts.length > 0) {
-        try {
-          const res = await this.fetchImpl(
-            `${this.baseUrl}/api/v1/sync/contacts`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ items: pendingContacts }),
-            }
+        const accepted = await this.postInChunks(
+          "/api/v1/sync/contacts",
+          pendingContacts
+        );
+        if (accepted.length > 0) {
+          const acceptedSet = new Set(accepted);
+          const remaining = pendingContacts.filter(
+            (c) => !acceptedSet.has(c.clientSubmissionId)
           );
-          if (res.ok) {
-            const data = await res.json();
-            const accepted: string[] = data?.accepted || [];
-            if (accepted.length > 0) {
-              const acceptedSet = new Set(accepted);
-              const remaining = pendingContacts.filter(
-                (c) => !acceptedSet.has(c.clientSubmissionId)
-              );
-              // Accepted contacts leave the queue: drop only their ids and
-              // delete their secure entries.
-              for (const id of accepted) {
-                await this.secureStorage.removeItem(secureContactKey(id));
-              }
-              await this.savePendingContacts(remaining);
-              syncedContacts = accepted.length;
-              this.lastSyncedAt = new Date().toISOString();
-            }
+          // Accepted contacts leave the queue: drop only their ids and
+          // delete their secure entries.
+          for (const id of accepted) {
+            await this.secureStorage.removeItem(secureContactKey(id));
           }
-        } catch {
-          // Offline or unreachable: keep in local queue
+          await this.savePendingContacts(remaining);
+          syncedContacts = accepted.length;
+          this.lastSyncedAt = new Date().toISOString();
         }
       }
     } finally {
@@ -376,6 +356,33 @@ export class AndroidOfflineSyncManager {
     }
 
     return { syncedResponses, syncedContacts };
+  }
+
+  // Sends the queue in chunks of SYNC_CHUNK_SIZE so a large offline backlog
+  // never exceeds the server's per-request item and body-size limits. Stops at
+  // the first failed or rejected request (offline, 429, 413) and returns the
+  // ids the server accepted so far; everything else stays queued.
+  private async postInChunks(
+    path: string,
+    items: { clientSubmissionId: string }[]
+  ): Promise<string[]> {
+    const accepted: string[] = [];
+    for (let i = 0; i < items.length; i += SYNC_CHUNK_SIZE) {
+      const chunk = items.slice(i, i + SYNC_CHUNK_SIZE);
+      try {
+        const res = await this.fetchImpl(`${this.baseUrl}${path}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: chunk }),
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        accepted.push(...((data?.accepted as string[]) || []));
+      } catch {
+        break;
+      }
+    }
+    return accepted;
   }
 
   private async incrementSyncedCount(delta: number): Promise<void> {

@@ -111,6 +111,36 @@ export async function removeSyncedContacts(ids: string[]): Promise<void> {
   });
 }
 
+// Items per sync request; below the server cap (MAX_SYNC_BATCH_ITEMS = 50)
+// and its 1 MB body limit, so a large offline backlog still drains.
+export const SYNC_CHUNK_SIZE = 25;
+
+// Sends items in chunks and stops at the first failed or rejected request
+// (offline, 429, 413). Returns the ids accepted so far; the rest stay queued
+// in IndexedDB for the next online event.
+async function postInChunks(
+  url: string,
+  items: { clientSubmissionId: string }[]
+): Promise<string[]> {
+  const accepted: string[] = [];
+  for (let i = 0; i < items.length; i += SYNC_CHUNK_SIZE) {
+    const chunk = items.slice(i, i + SYNC_CHUNK_SIZE);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: chunk }),
+      });
+      if (!res.ok) break;
+      const data = await res.json();
+      accepted.push(...((data?.accepted as string[]) || []));
+    } catch {
+      break;
+    }
+  }
+  return accepted;
+}
+
 export async function flushOfflineQueues(): Promise<{
   syncedResponses: number;
   syncedContacts: number;
@@ -123,39 +153,15 @@ export async function flushOfflineQueues(): Promise<{
   let syncedContacts = 0;
 
   if (pendingResps.length > 0) {
-    try {
-      const res = await fetch("/api/v1/sync/responses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: pendingResps }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const accepted: string[] = data.accepted || [];
-        await removeSyncedResponses(accepted);
-        syncedResponses = accepted.length;
-      }
-    } catch {
-      // Remain in IndexedDB queue for next online event
-    }
+    const accepted = await postInChunks("/api/v1/sync/responses", pendingResps);
+    await removeSyncedResponses(accepted);
+    syncedResponses = accepted.length;
   }
 
   if (pendingContacts.length > 0) {
-    try {
-      const res = await fetch("/api/v1/sync/contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: pendingContacts }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const accepted: string[] = data.accepted || [];
-        await removeSyncedContacts(accepted);
-        syncedContacts = accepted.length;
-      }
-    } catch {
-      // Remain in IndexedDB queue for next online event
-    }
+    const accepted = await postInChunks("/api/v1/sync/contacts", pendingContacts);
+    await removeSyncedContacts(accepted);
+    syncedContacts = accepted.length;
   }
 
   const afterResps = await getPendingResponses();

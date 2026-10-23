@@ -133,6 +133,7 @@ export function ContactScreen({
         <Text style={styles.label}>Nombre y Apellido *</Text>
         <TextInput
           value={nombre}
+          maxLength={120}
           onChangeText={setNombre}
           placeholder="Tu nombre y apellido"
           style={styles.input}
@@ -141,6 +142,7 @@ export function ContactScreen({
         <Text style={styles.label}>Teléfono / WhatsApp *</Text>
         <TextInput
           value={telefono}
+          maxLength={40}
           onChangeText={setTelefono}
           placeholder="Ej. 221 555-1234"
           keyboardType="phone-pad"
@@ -150,6 +152,7 @@ export function ContactScreen({
         <Text style={styles.label}>Correo electrónico (opcional)</Text>
         <TextInput
           value={email}
+          maxLength={120}
           onChangeText={setEmail}
           placeholder="correo@ejemplo.com"
           keyboardType="email-address"
@@ -162,6 +165,7 @@ export function ContactScreen({
         </Text>
         <TextInput
           value={organizacionOEspacio}
+          maxLength={200}
           onChangeText={setOrganizacionOEspacio}
           placeholder="Dónde trabajás o participás"
           style={styles.input}
@@ -190,6 +194,7 @@ export function ContactScreen({
         <Text style={styles.label}>Municipio *</Text>
         <TextInput
           value={municipio}
+          maxLength={80}
           onChangeText={setMunicipio}
           placeholder="Buscá o seleccioná tu municipio..."
           style={styles.input}
@@ -265,6 +270,7 @@ export function ContactScreen({
         <Text style={styles.label}>Comentarios o disponibilidad</Text>
         <TextInput
           value={comentarios}
+          maxLength={500}
           onChangeText={setComentarios}
           placeholder="Comentarios opcionales..."
           multiline

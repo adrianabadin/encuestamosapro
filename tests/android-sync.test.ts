@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   AndroidOfflineSyncManager,
   MemoryKeyValueAdapter,
+  SYNC_CHUNK_SIZE,
 } from "../android-app/src/sync/offlineStore";
 
 const dump = (adapter: MemoryKeyValueAdapter): string =>
@@ -346,5 +347,97 @@ describe("Android pending contacts encrypted at rest (S8)", () => {
     expect(secureDump).not.toContain("android-contact-cap-001");
     expect(secureDump).toContain("Deferred Two");
     expect(dump(storage)).not.toContain("Deferred Two");
+  });
+});
+
+describe("Android sync batching (S7 correction)", () => {
+  it("flushes a large offline queue in requests of at most SYNC_CHUNK_SIZE items until it drains", async () => {
+    const storage = new MemoryKeyValueAdapter();
+    const sentBatchSizes: number[] = [];
+    const fetchMock = vi.fn(async (_url: string, init?: { body?: string }) => {
+      const items = JSON.parse(init?.body || "{}").items || [];
+      sentBatchSizes.push(items.length);
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          accepted: items.map((i: { clientSubmissionId: string }) => i.clientSubmissionId),
+          duplicates: [],
+          rejected: [],
+        }),
+      };
+    });
+
+    const manager = new AndroidOfflineSyncManager({
+      storage,
+      secureStorage: new MemoryKeyValueAdapter(),
+      baseUrl: "http://localhost:3082",
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    // Fill the queue offline (each save tries to flush; make those attempts fail).
+    fetchMock.mockImplementation(async () => {
+      throw new Error("offline");
+    });
+    for (let i = 0; i < 60; i++) {
+      await manager.saveAndTrySyncResponse({
+        clientSubmissionId: `and_bulk_${i}`,
+        sourcePlatform: "android",
+        isComplete: false,
+        currentStep: "S1",
+        consent: true,
+      });
+    }
+    expect((await manager.getQueueSummary()).pendingResponsesCount).toBe(60);
+
+    fetchMock.mockImplementation(async (_url: string, init?: { body?: string }) => {
+      const items = JSON.parse(init?.body || "{}").items || [];
+      sentBatchSizes.push(items.length);
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          accepted: items.map((i: { clientSubmissionId: string }) => i.clientSubmissionId),
+          duplicates: [],
+          rejected: [],
+        }),
+      } as unknown as Response;
+    });
+
+    const res = await manager.flushAllPendingWhenOnline();
+    expect(res.syncedResponses).toBe(60);
+    expect(sentBatchSizes.length).toBeGreaterThanOrEqual(3);
+    expect(Math.max(...sentBatchSizes)).toBeLessThanOrEqual(SYNC_CHUNK_SIZE);
+    expect((await manager.getQueueSummary()).pendingResponsesCount).toBe(0);
+  });
+
+  it("stops sending further chunks after a rejected request and keeps the rest queued", async () => {
+    const storage = new MemoryKeyValueAdapter();
+    const fetchMock = vi.fn(async (): Promise<Response> => {
+      throw new Error("offline");
+    });
+    const manager = new AndroidOfflineSyncManager({
+      storage,
+      secureStorage: new MemoryKeyValueAdapter(),
+      baseUrl: "http://localhost:3082",
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    for (let i = 0; i < 30; i++) {
+      await manager.saveAndTrySyncResponse({
+        clientSubmissionId: `and_rl_${i}`,
+        sourcePlatform: "android",
+        isComplete: false,
+        currentStep: "S1",
+        consent: true,
+      });
+    }
+    fetchMock.mockClear();
+    fetchMock.mockImplementation(async () =>
+      ({ ok: false, status: 429, json: async () => ({ ok: false }) }) as unknown as Response
+    );
+    const res = await manager.flushAllPendingWhenOnline();
+    expect(res.syncedResponses).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((await manager.getQueueSummary()).pendingResponsesCount).toBe(30);
   });
 });
