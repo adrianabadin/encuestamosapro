@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 function readParentServerUrl() {
-  const fallback = "http://thecodersteam.com:3082";
+  const fallback = "https://encuestamosapro.thecodersteam.com";
   try {
     const parentEnvPath = path.resolve(__dirname, "..", ".env");
     if (fs.existsSync(parentEnvPath)) {
@@ -25,7 +25,7 @@ function readParentServerUrl() {
           ) {
             return rawVal.startsWith("http://") || rawVal.startsWith("https://")
               ? rawVal.replace(/\/+$/, "")
-              : `http://${rawVal.replace(/\/+$/, "")}`;
+              : `https://${rawVal.replace(/\/+$/, "")}`;
           }
         }
       }

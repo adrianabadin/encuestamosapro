@@ -24,9 +24,10 @@ const asyncStorageAdapter: KeyValueStorageAdapter = {
   removeItem: (key) => AsyncStorage.removeItem(key),
 };
 
-// Fixed server URL injected exclusively from parent ../.env (SERVER_URL), defaulting to http://thecodersteam.com:3082
+// Fixed server URL injected exclusively from parent ../.env (SERVER_URL), defaulting to https://encuestamosapro.thecodersteam.com
 const FIXED_BACKEND_URL: string =
-  process.env.EXPO_PUBLIC_SERVER_URL || "http://thecodersteam.com:3082";
+  process.env.EXPO_PUBLIC_SERVER_URL ||
+  "https://encuestamosapro.thecodersteam.com";
 
 export default function App() {
   const managerRef = useRef(
