@@ -13,12 +13,20 @@ export interface MosaproUser {
 
 export const AUTH_COOKIE_NAME = "mosapro_admin_token";
 
+// Errors whose message is safe to show to the user (input validation).
+// Anything else is internal and must not leak to the client.
+export class AuthInputError extends Error {}
+
+// Session tokens are HMAC-signed with this secret; anyone who knows it can
+// forge an admin session, so it must be a dedicated random value.
 function getAuthSecret(): string {
-  return (
-    process.env.AUTH_SECRET ||
-    process.env.DATABASE_URL ||
-    "mosapro_default_secret_key_2026"
-  );
+  const secret = process.env.AUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "AUTH_SECRET is not configured (min 32 chars). Generate one with: openssl rand -hex 32"
+    );
+  }
+  return secret;
 }
 
 export function hashPassword(password: string): string {
@@ -87,10 +95,10 @@ export async function registerUserAccount(params: {
 
   const cleanEmail = params.email.trim().toLowerCase();
   if (!cleanEmail || !cleanEmail.includes("@")) {
-    throw new Error("El correo electrónico no es válido.");
+    throw new AuthInputError("El correo electrónico no es válido.");
   }
   if (!params.password || params.password.length < 6) {
-    throw new Error("La contraseña debe tener al menos 6 caracteres.");
+    throw new AuthInputError("La contraseña debe tener al menos 6 caracteres.");
   }
 
   const existingEmail = await db.query(
@@ -98,7 +106,7 @@ export async function registerUserAccount(params: {
     [cleanEmail]
   );
   if (existingEmail.rowCount && existingEmail.rowCount > 0) {
-    throw new Error("Ya existe un usuario registrado con ese correo electrónico.");
+    throw new AuthInputError("Ya existe un usuario registrado con ese correo electrónico.");
   }
 
   // Check if there are any users in mosapro_users yet

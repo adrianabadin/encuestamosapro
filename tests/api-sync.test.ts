@@ -128,7 +128,8 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
     expect(result.rejected).toHaveLength(1);
     expect(result.rejected[0].clientSubmissionId).toBe(invalidId);
 
-    // Re-syncing the same clientSubmissionId should update the existing record in place (progressive upsert S10)
+    // Re-syncing an already completed clientSubmissionId is acknowledged as a duplicate
+    // but must NOT overwrite the stored response (anti-tampering)
     const retryResult = await syncSurveyResponsesBatch([
       {
         clientSubmissionId: validId,
@@ -166,6 +167,12 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
       },
     ]);
     expect(retryResult.accepted).toContain(validId);
+    expect(retryResult.duplicates).toContain(validId);
+    const afterRetry = (await getAllSurveyResponses()).find(
+      (r) => r.clientSubmissionId === validId
+    );
+    expect(afterRetry?.payload.section2B?.areaServicio).toBe("Guardia General");
+    expect(afterRetry?.relacionZonal).toBe("regular");
 
     // Also test saving a partial draft right after Step 1 (before S3/S4/S5 are filled) and then updating it when going back/forward
     const draftId = `${testPrefix}draft_progressive`;
@@ -235,7 +242,8 @@ describe("Repository, Batch Offline Sync, Dynamic Question Editor & Export (S1, 
 
     const csv = buildCsvString(responses);
     expect(csv).toContain("La Plata");
-    expect(csv).toContain("Terapia Intensiva");
+    expect(csv).toContain("Guardia General");
+    expect(csv).not.toContain("Terapia Intensiva");
 
     const xlsxBuf = buildExcelBuffer(responses, contacts);
     expect(xlsxBuf.byteLength).toBeGreaterThan(100);

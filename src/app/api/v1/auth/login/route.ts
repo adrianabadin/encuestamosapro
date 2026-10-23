@@ -3,8 +3,27 @@ import {
   AUTH_COOKIE_NAME,
   authenticateUserAccount,
 } from "@/lib/auth/auth";
+import {
+  RATE_LIMITS,
+  checkRateLimit,
+  getClientIp,
+} from "@/lib/security/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const limit = checkRateLimit(RATE_LIMITS.login, getClientIp(req));
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Demasiados intentos de inicio de sesión. Probá de nuevo en unos minutos.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   try {
     const body = await req.json();
     const result = await authenticateUserAccount(
@@ -32,9 +51,11 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (err: unknown) {
-    const msg =
-      err instanceof Error ? err.message : "Error al iniciar sesión.";
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  } catch (error) {
+    console.error("Error in POST /api/v1/auth/login:", error);
+    return NextResponse.json(
+      { ok: false, error: "Error al iniciar sesión." },
+      { status: 500 }
+    );
   }
 }

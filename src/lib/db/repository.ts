@@ -108,10 +108,17 @@ export async function syncSurveyResponsesBatch(
     const referente = validItem.section5?.ofreceReferente || null;
 
     const existing = await db.query(
-      `SELECT id FROM mosapro_survey_responses WHERE client_submission_id = $1`,
+      `SELECT id, is_complete FROM mosapro_survey_responses WHERE client_submission_id = $1`,
       [validItem.clientSubmissionId]
     );
     if (existing.rowCount && existing.rowCount > 0) {
+      // A completed response is final: replays of it are acknowledged as
+      // duplicates, but its stored data can no longer be overwritten.
+      if (existing.rows[0].is_complete !== false) {
+        accepted.push(validItem.clientSubmissionId);
+        duplicates.push(validItem.clientSubmissionId);
+        continue;
+      }
       await db.query(
         `UPDATE mosapro_survey_responses
          SET survey_version = $2,
@@ -127,7 +134,7 @@ export async function syncSurveyResponsesBatch(
              ofrece_referente = $12,
              payload_json = $13::jsonb,
              synced_at = NOW()
-         WHERE client_submission_id = $1`,
+         WHERE client_submission_id = $1 AND is_complete = FALSE`,
         [
           validItem.clientSubmissionId,
           validItem.surveyVersion || 2,

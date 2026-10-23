@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncSurveyResponsesBatch } from "@/lib/db/repository";
 import { SurveySubmissionPayload } from "@/lib/survey/validator";
+import {
+  MAX_SYNC_BATCH_ITEMS,
+  RATE_LIMITS,
+  checkRateLimit,
+  getClientIp,
+} from "@/lib/security/rate-limit";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,15 +19,31 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
+  const limit = checkRateLimit(RATE_LIMITS.sync, getClientIp(req));
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Demasiadas solicitudes. Se reintentará automáticamente." },
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Retry-After": String(limit.retryAfterSeconds),
+        },
+      }
+    );
+  }
+
   try {
     const body = await req.json();
-    const items: Partial<SurveySubmissionPayload>[] = Array.isArray(body?.items)
+    const allItems: Partial<SurveySubmissionPayload>[] = Array.isArray(body?.items)
       ? body.items
       : body?.submission
       ? [body.submission]
       : body?.clientSubmissionId
       ? [body]
       : [];
+    const items = allItems.slice(0, MAX_SYNC_BATCH_ITEMS);
+    const deferred = allItems.length - items.length;
 
     if (items.length === 0) {
       return NextResponse.json(
@@ -38,6 +60,7 @@ export async function POST(req: NextRequest) {
       {
         ok: result.rejected.length === 0,
         ...result,
+        deferred,
         syncedAt: new Date().toISOString(),
       },
       { status, headers: corsHeaders }

@@ -1,7 +1,27 @@
 import * as XLSX from "xlsx";
 import { StoredSurveyResponse, StoredContactSubmission } from "../db/repository";
 
-export function flattenSurveyResponseRow(r: StoredSurveyResponse): Record<string, string | number> {
+type CellValue = string | number;
+
+// Spreadsheet apps evaluate cells starting with these characters as formulas
+// (CSV/formula injection). Public submissions are free text, so prefix them
+// with an apostrophe to force them to be read as plain text.
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+
+export function sanitizeSpreadsheetCell(value: CellValue): CellValue {
+  if (typeof value !== "string") return value;
+  return FORMULA_TRIGGER.test(value) ? `'${value}` : value;
+}
+
+function sanitizeRow(row: Record<string, CellValue>): Record<string, CellValue> {
+  const out: Record<string, CellValue> = {};
+  for (const [key, val] of Object.entries(row)) {
+    out[sanitizeSpreadsheetCell(key) as string] = sanitizeSpreadsheetCell(val);
+  }
+  return out;
+}
+
+export function flattenSurveyResponseRow(r: StoredSurveyResponse): Record<string, CellValue> {
   const p = r.payload;
   const prio = (rank: number) =>
     p.section4?.priorities?.find((x) => x.rank === rank)?.themeLabel || "";
@@ -18,7 +38,7 @@ export function flattenSurveyResponseRow(r: StoredSurveyResponse): Record<string
       : String(val || "");
   }
 
-  return {
+  return sanitizeRow({
     ID: r.id,
     Submission_UUID: r.clientSubmissionId,
     Estado_Encuesta: r.isComplete ? "Completa" : `En curso (${r.currentStep})`,
@@ -63,11 +83,11 @@ export function flattenSurveyResponseRow(r: StoredSurveyResponse): Record<string
     S5_4_Horarios: (p.section5?.horarios || []).join(", "),
     S5_5_Modalidad: p.section5?.modalidad || "",
     ...extraCols,
-  };
+  });
 }
 
-export function flattenContactRow(c: StoredContactSubmission): Record<string, string | number> {
-  return {
+export function flattenContactRow(c: StoredContactSubmission): Record<string, CellValue> {
+  return sanitizeRow({
     ID: c.id,
     Fecha_Registro: c.createdAtClient || c.syncedAt,
     Plataforma: c.sourcePlatform,
@@ -82,7 +102,7 @@ export function flattenContactRow(c: StoredContactSubmission): Record<string, st
     Horarios: (c.horarios || []).join(", "),
     Modalidad: c.modalidad || "",
     Comentarios: c.comentarios || "",
-  };
+  });
 }
 
 export function buildCsvString(responses: StoredSurveyResponse[]): string {
