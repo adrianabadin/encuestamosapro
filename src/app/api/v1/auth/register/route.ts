@@ -3,6 +3,7 @@ import {
   AUTH_COOKIE_NAME,
   AuthInputError,
   registerUserAccount,
+  sessionCookieOptions,
   signSessionToken,
 } from "@/lib/auth/auth";
 import {
@@ -44,12 +45,7 @@ export async function POST(req: NextRequest) {
 
     if (user.isValidated) {
       const token = signSessionToken(user);
-      response.cookies.set(AUTH_COOKIE_NAME, token, {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-      });
+      response.cookies.set(AUTH_COOKIE_NAME, token, sessionCookieOptions());
     }
 
     return response;

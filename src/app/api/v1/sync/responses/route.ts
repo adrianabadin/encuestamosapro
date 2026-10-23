@@ -6,6 +6,7 @@ import {
   RATE_LIMITS,
   checkRateLimit,
   getClientIp,
+  readJsonWithLimit,
 } from "@/lib/security/rate-limit";
 
 const corsHeaders = {
@@ -34,7 +35,21 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
+    const parsed = await readJsonWithLimit(req);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            parsed.status === 413
+              ? "La solicitud supera el tamaño máximo permitido."
+              : "Cuerpo de la solicitud inválido.",
+        },
+        { status: parsed.status, headers: corsHeaders }
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = parsed.body as any;
     const allItems: Partial<SurveySubmissionPayload>[] = Array.isArray(body?.items)
       ? body.items
       : body?.submission

@@ -13,6 +13,25 @@ export interface MosaproUser {
 
 export const AUTH_COOKIE_NAME = "mosapro_admin_token";
 
+// Arbitrary constant key for pg_advisory_xact_lock around first-admin creation.
+const FIRST_ADMIN_LOCK_KEY = 4_821_337;
+
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+
+// Cookie attributes for the admin session. Secure in production so the token
+// never travels over plain HTTP; local http dev keeps working.
+export function sessionCookieOptions(
+  env: string | undefined = process.env.NODE_ENV
+) {
+  return {
+    httpOnly: true,
+    secure: env === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  };
+}
+
 // Errors whose message is safe to show to the user (input validation).
 // Anything else is internal and must not leak to the client.
 export class AuthInputError extends Error {}
@@ -70,7 +89,15 @@ export function verifySessionToken(
     .createHmac("sha256", getAuthSecret())
     .update(dataB64)
     .digest("base64url");
-  if (sig !== expectedSig) return null;
+  // Constant-time comparison so the signature cannot be guessed byte by byte.
+  const sigBuf = Buffer.from(sig || "", "utf8");
+  const expectedBuf = Buffer.from(expectedSig, "utf8");
+  if (
+    sigBuf.length !== expectedBuf.length ||
+    !crypto.timingSafeEqual(sigBuf, expectedBuf)
+  ) {
+    return null;
+  }
   try {
     const payload = JSON.parse(Buffer.from(dataB64, "base64url").toString("utf8"));
     if (!payload.exp || payload.exp < Date.now()) return null;
@@ -109,29 +136,47 @@ export async function registerUserAccount(params: {
     throw new AuthInputError("Ya existe un usuario registrado con ese correo electrónico.");
   }
 
-  // Check if there are any users in mosapro_users yet
-  const countRes = await db.query(
-    `SELECT COUNT(*)::int AS cnt FROM mosapro_users`
-  );
-  const totalUsers = countRes.rows[0]?.cnt ?? 0;
-  const isFirstUser = totalUsers === 0;
-
-  const role: "admin" | "user" = isFirstUser ? "admin" : "user";
-  const isValidated = isFirstUser;
   const pwdHash = hashPassword(params.password);
 
-  const insertRes = await db.query(
-    `INSERT INTO mosapro_users (email, nombre, password_hash, role, is_validated)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, email, nombre, role, is_validated, created_at`,
-    [
-      cleanEmail,
-      (params.nombre || "").trim() || cleanEmail.split("@")[0],
-      pwdHash,
-      role,
-      isValidated,
-    ]
-  );
+  // The first registered user becomes the validated admin. The count and the
+  // insert run in one transaction under an advisory lock so two concurrent
+  // registrations on an empty table cannot both become admin.
+  const client = await db.connect();
+  let insertRes;
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock($1)", [
+      FIRST_ADMIN_LOCK_KEY,
+    ]);
+    const countRes = await client.query(
+      `SELECT COUNT(*)::int AS cnt FROM mosapro_users`
+    );
+    const isFirstUser = (countRes.rows[0]?.cnt ?? 0) === 0;
+    insertRes = await client.query(
+      `INSERT INTO mosapro_users (email, nombre, password_hash, role, is_validated)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, email, nombre, role, is_validated, created_at`,
+      [
+        cleanEmail,
+        (params.nombre || "").trim() || cleanEmail.split("@")[0],
+        pwdHash,
+        isFirstUser ? "admin" : "user",
+        isFirstUser,
+      ]
+    );
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    const pgErr = err as { code?: string };
+    if (pgErr && pgErr.code === "23505") {
+      throw new AuthInputError(
+        "Ya existe un usuario registrado con ese correo electrónico."
+      );
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
 
   const row = insertRes.rows[0];
   return {

@@ -81,3 +81,32 @@ export const RATE_LIMITS = {
 // Clients drop only the ids returned in `accepted`, so items beyond this cap
 // stay in their offline queue and go out on the next flush.
 export const MAX_SYNC_BATCH_ITEMS = 50;
+
+// Upper bound for a public sync request body. A full batch of
+// MAX_SYNC_BATCH_ITEMS surveys is well under this.
+export const MAX_SYNC_BODY_BYTES = 1_000_000;
+
+export type LimitedJsonResult =
+  | { ok: true; body: unknown }
+  | { ok: false; status: 413 | 400 };
+
+// Reads a JSON body without accepting more than maxBytes: rejects early on a
+// declared Content-Length and re-checks the actual size of the text received.
+export async function readJsonWithLimit(
+  req: NextRequest,
+  maxBytes: number = MAX_SYNC_BODY_BYTES
+): Promise<LimitedJsonResult> {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    return { ok: false, status: 413 };
+  }
+  const raw = await req.text();
+  if (Buffer.byteLength(raw, "utf8") > maxBytes) {
+    return { ok: false, status: 413 };
+  }
+  try {
+    return { ok: true, body: JSON.parse(raw) };
+  } catch {
+    return { ok: false, status: 400 };
+  }
+}

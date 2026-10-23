@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAME,
   authenticateUserAccount,
+  sessionCookieOptions,
 } from "@/lib/auth/auth";
 import {
   RATE_LIMITS,
@@ -43,12 +44,11 @@ export async function POST(req: NextRequest) {
       user: result.user,
     });
 
-    response.cookies.set(AUTH_COOKIE_NAME, result.token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    response.cookies.set(
+      AUTH_COOKIE_NAME,
+      result.token,
+      sessionCookieOptions()
+    );
 
     return response;
   } catch (error) {
