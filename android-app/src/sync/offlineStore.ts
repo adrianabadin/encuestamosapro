@@ -34,7 +34,6 @@ const KEY_ACTIVE_DRAFT = "mosapro_android_active_draft_v2";
 const KEY_FIELD_SETTINGS = "mosapro_android_field_settings_v1";
 
 export interface FieldSurveyorSettings {
-  apiBaseUrl: string;
   defaultRegion: string;
   surveyorAlias?: string;
 }
@@ -79,7 +78,6 @@ export class AndroidOfflineSyncManager {
       try {
         const parsed = JSON.parse(raw);
         return {
-          apiBaseUrl: parsed.apiBaseUrl || this.baseUrl,
           defaultRegion: parsed.defaultRegion || "",
           surveyorAlias: parsed.surveyorAlias || "",
         };
@@ -88,14 +86,12 @@ export class AndroidOfflineSyncManager {
       }
     }
     return {
-      apiBaseUrl: this.baseUrl,
       defaultRegion: "",
       surveyorAlias: "",
     };
   }
 
   async saveFieldSettings(settings: FieldSurveyorSettings): Promise<void> {
-    this.setBaseUrl(settings.apiBaseUrl);
     await this.storage.setItem(KEY_FIELD_SETTINGS, JSON.stringify(settings));
   }
 

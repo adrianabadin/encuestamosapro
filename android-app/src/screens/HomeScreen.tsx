@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  TextInput,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
@@ -17,11 +16,9 @@ interface HomeScreenProps {
   queueSummary: QueueSummary;
   hasActiveDraft: boolean;
   activeDraftStep?: string;
-  apiBaseUrl: string;
   defaultRegion: string;
   schemaVersion: number;
   lastSyncBanner: string | null;
-  onChangeApiBaseUrl: (url: string) => void;
   onChangeDefaultRegion: (region: string) => void;
   onSaveSettings: () => void;
   onManualSync: () => void;
@@ -36,11 +33,9 @@ export function HomeScreen({
   queueSummary,
   hasActiveDraft,
   activeDraftStep,
-  apiBaseUrl,
   defaultRegion,
   schemaVersion,
   lastSyncBanner,
-  onChangeApiBaseUrl,
   onChangeDefaultRegion,
   onSaveSettings,
   onManualSync,
@@ -245,18 +240,6 @@ export function HomeScreen({
           })}
         </View>
 
-        <Text style={[styles.label, { marginTop: 14 }]}>
-          URL del Servidor Backend (Puerto 3082 por defecto):
-        </Text>
-        <TextInput
-          value={apiBaseUrl}
-          onChangeText={onChangeApiBaseUrl}
-          placeholder="http://192.168.1.100:3082 o https://encuesta.mosapro.com.ar"
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.input}
-        />
-
         <Pressable
           onPress={onSaveSettings}
           style={({ pressed }) => [
@@ -265,7 +248,7 @@ export function HomeScreen({
           ]}
         >
           <Text style={styles.saveConfigBtnText}>
-            Guardar configuración del dispositivo
+            Guardar Región por defecto
           </Text>
         </Pressable>
       </View>

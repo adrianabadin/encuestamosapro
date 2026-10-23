@@ -24,13 +24,15 @@ const asyncStorageAdapter: KeyValueStorageAdapter = {
   removeItem: (key) => AsyncStorage.removeItem(key),
 };
 
-const DEFAULT_BACKEND_URL = "http://10.0.2.2:3082"; // Android emulator host or replaceable with production domain
+// Fixed server URL injected exclusively from parent ../.env (SERVER_URL), defaulting to http://thecodersteam.com:3082
+const FIXED_BACKEND_URL: string =
+  process.env.EXPO_PUBLIC_SERVER_URL || "http://thecodersteam.com:3082";
 
 export default function App() {
   const managerRef = useRef(
     new AndroidOfflineSyncManager({
       storage: asyncStorageAdapter,
-      baseUrl: DEFAULT_BACKEND_URL,
+      baseUrl: FIXED_BACKEND_URL,
     })
   );
 
@@ -38,7 +40,6 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [schema, setSchema] = useState<SurveySchema>(DEFAULT_SURVEY_SCHEMA);
-  const [apiBaseUrl, setApiBaseUrl] = useState(DEFAULT_BACKEND_URL);
   const [defaultRegion, setDefaultRegion] = useState("");
   const [activeDraft, setActiveDraft] = useState<Record<
     string,
@@ -94,9 +95,7 @@ export default function App() {
   useEffect(() => {
     const mgr = managerRef.current;
     mgr.getFieldSettings().then((settings) => {
-      setApiBaseUrl(settings.apiBaseUrl);
       setDefaultRegion(settings.defaultRegion);
-      mgr.setBaseUrl(settings.apiBaseUrl);
       refreshLocalState();
       triggerAutoSync(false);
     });
@@ -126,7 +125,6 @@ export default function App() {
   const handleSaveSettings = async () => {
     const mgr = managerRef.current;
     await mgr.saveFieldSettings({
-      apiBaseUrl,
       defaultRegion,
     });
     await triggerAutoSync(true);
@@ -186,11 +184,9 @@ export default function App() {
           queueSummary={queueSummary}
           hasActiveDraft={Boolean(activeDraft)}
           activeDraftStep={activeDraft?.currentStep as string | undefined}
-          apiBaseUrl={apiBaseUrl}
           defaultRegion={defaultRegion}
           schemaVersion={schema.version}
           lastSyncBanner={lastSyncBanner}
-          onChangeApiBaseUrl={setApiBaseUrl}
           onChangeDefaultRegion={setDefaultRegion}
           onSaveSettings={handleSaveSettings}
           onManualSync={() => triggerAutoSync(true)}
