@@ -54,7 +54,11 @@ module.exports = {
     },
     extra: {
       serverUrl,
+      eas: {
+        projectId: "58a330c8-8ed3-4763-bdbb-3a59d5bf9bb4",
+      },
     },
+    owner: "enthalpydev",
     android: {
       package: "ar.com.mosapro.relevamiento",
       versionCode: 1,
