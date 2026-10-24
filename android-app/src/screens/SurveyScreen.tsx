@@ -12,6 +12,7 @@ import {
   DEFAULT_SURVEY_SCHEMA,
   DEFAULT_HOSPITAL_SERVICES,
   REGIONES_SANITARIAS,
+  REGION_NO_CALIFICA,
   MUNICIPIOS_PBA,
   getMunicipiosByRegion,
   getActiveSectionIds,
@@ -28,6 +29,9 @@ import {
 const BUILTIN_QUESTION_IDS = new Set([
   "q_consent",
   "q_main_location",
+  "q_1e_nivel",
+  "q_1e_jurisdiccion",
+  "q_1e_rol",
   "q_2a_tarea",
   "q_2b_tipo_hospital",
   "q_2b_tarea",
@@ -152,6 +156,18 @@ export function SurveyScreen({
     (initialDraft?.s2dArea as string) || ""
   );
 
+  // 1E (Instituciones educativas, inline cascade in Section 1)
+  const [eduNivel, setEduNivel] = useState(
+    (initialDraft?.eduNivel as string) || ""
+  );
+  const [eduJurisdiccion, setEduJurisdiccion] = useState(
+    (initialDraft?.eduJurisdiccion as string) || ""
+  );
+  const [eduRol, setEduRol] = useState((initialDraft?.eduRol as string) || "");
+  const [eduRolOtro, setEduRolOtro] = useState(
+    (initialDraft?.eduRolOtro as string) || ""
+  );
+
   // Section 3
   const [regionSanitaria, setRegionSanitaria] = useState(
     (initialDraft?.regionSanitaria as string) || defaultRegion || ""
@@ -263,6 +279,33 @@ export function SurveyScreen({
     );
   }, [s2bAreaServicio]);
 
+  const eduOptions = (id: string) => {
+    const q = getQ(
+      id,
+      "",
+      DEFAULT_SURVEY_SCHEMA.sections
+        .find((s) => s.id === "S1")
+        ?.questions.find((x) => x.id === id)?.options
+    );
+    return q.options || [];
+  };
+
+  // Leaving «No califica» drops a free-text localidad that is not a PBA
+  // municipality so the municipio search starts clean.
+  const selectRegion = (code: string) => {
+    if (
+      regionSanitaria === REGION_NO_CALIFICA &&
+      code !== REGION_NO_CALIFICA &&
+      !MUNICIPIOS_PBA.some(
+        (m) => m.name.toLowerCase() === municipio.trim().toLowerCase()
+      )
+    ) {
+      setMunicipio("");
+      setMunicipioSearch("");
+    }
+    setRegionSanitaria(code);
+  };
+
   const filteredMunicipios = useMemo(() => {
     const base = regionSanitaria
       ? getMunicipiosByRegion(regionSanitaria)
@@ -305,6 +348,7 @@ export function SurveyScreen({
       | "hospital"
       | "comunitario"
       | "gestion_sanitaria"
+      | "institucion_educativa"
       | undefined,
     section2A:
       mainLocation === "primer_nivel"
@@ -335,6 +379,15 @@ export function SurveyScreen({
             rolGestion: s2dRol,
             rolGestionOtra: s2dRolOtra,
             areaEspacio: s2dArea,
+          }
+        : undefined,
+    sectionEducativa:
+      mainLocation === "institucion_educativa"
+        ? {
+            nivel: eduNivel,
+            jurisdiccion: eduJurisdiccion,
+            rol: eduRol,
+            rolOtro: eduRol === "otro" ? eduRolOtro : "",
           }
         : undefined,
     section3: {
@@ -391,6 +444,10 @@ export function SurveyScreen({
     s2dRol,
     s2dRolOtra,
     s2dArea,
+    eduNivel,
+    eduJurisdiccion,
+    eduRol,
+    eduRolOtro,
     regionSanitaria,
     municipio,
     antiguedad,
@@ -419,6 +476,14 @@ export function SurveyScreen({
     } else if (currentSectionId === "S1") {
       if (!mainLocation)
         errs.push("Seleccioná dónde realizás tu tarea principal.");
+      else if (mainLocation === "institucion_educativa") {
+        if (!eduNivel) errs.push("Seleccioná el nivel de la institución educativa.");
+        if (!eduJurisdiccion)
+          errs.push("Seleccioná la jurisdicción (Municipal, Provincial o Nacional).");
+        if (!eduRol) errs.push("Seleccioná tu rol en la institución educativa.");
+        else if (eduRol === "otro" && !eduRolOtro.trim())
+          errs.push("Especificá ¿Cuál? en tu rol.");
+      }
     } else if (currentSectionId === "S2A") {
       if (!s2aTarea) errs.push("Seleccioná tu tarea en el primer nivel.");
       else if (s2aTarea === "otra" && !s2aTareaOtra.trim())
@@ -446,8 +511,14 @@ export function SurveyScreen({
       if (!s2dArea.trim())
         errs.push("Completá el área, dirección o espacio donde trabajás.");
     } else if (currentSectionId === "S3") {
-      if (!regionSanitaria) errs.push("Seleccioná la Región Sanitaria.");
-      if (!municipio.trim()) errs.push("Seleccioná o escribí el Municipio.");
+      if (!regionSanitaria)
+        errs.push("Seleccioná la Región Sanitaria o «No califica».");
+      if (!municipio.trim())
+        errs.push(
+          regionSanitaria === REGION_NO_CALIFICA
+            ? "Escribí tu localidad."
+            : "Seleccioná o escribí el Municipio."
+        );
       if (!antiguedad) errs.push("Seleccioná tu antigüedad.");
     } else if (currentSectionId === "S4") {
       if (priorities.length !== 5)
@@ -711,6 +782,10 @@ export function SurveyScreen({
                 value: "gestion_sanitaria",
                 label: "Gestión sanitaria",
               },
+              {
+                value: "institucion_educativa",
+                label: "Instituciones educativas",
+              },
             ].map((opt) => {
               const active = mainLocation === opt.value;
               return (
@@ -730,6 +805,109 @@ export function SurveyScreen({
                 </Pressable>
               );
             })}
+
+            {/* Instituciones educativas: nivel → jurisdicción → rol in cascade */}
+            {mainLocation === "institucion_educativa" && (
+              <View style={styles.cascadeBox}>
+                <Text style={styles.questionLabel}>
+                  {getQ("q_1e_nivel", "Nivel educativo:").label}
+                </Text>
+                <View style={styles.chipsWrap}>
+                  {eduOptions("q_1e_nivel").map((opt) => {
+                    const active = eduNivel === opt.value;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        onPress={() => {
+                          if (opt.value !== eduNivel) {
+                            setEduJurisdiccion("");
+                            setEduRol("");
+                            setEduRolOtro("");
+                          }
+                          setEduNivel(opt.value);
+                        }}
+                        style={[styles.chip, active && styles.chipActive]}
+                      >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                          {opt.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {eduNivel ? (
+                  <>
+                    <Text style={styles.questionLabel}>
+                      {
+                        getQ("q_1e_jurisdiccion", "Jurisdicción de la institución:")
+                          .label
+                      }
+                    </Text>
+                    <View style={styles.chipsWrap}>
+                      {eduOptions("q_1e_jurisdiccion").map((opt) => {
+                        const active = eduJurisdiccion === opt.value;
+                        return (
+                          <Pressable
+                            key={opt.value}
+                            onPress={() => {
+                              if (opt.value !== eduJurisdiccion) {
+                                setEduRol("");
+                                setEduRolOtro("");
+                              }
+                              setEduJurisdiccion(opt.value);
+                            }}
+                            style={[styles.chip, active && styles.chipActive]}
+                          >
+                            <Text
+                              style={[styles.chipText, active && styles.chipTextActive]}
+                            >
+                              {opt.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </>
+                ) : null}
+
+                {eduNivel && eduJurisdiccion ? (
+                  <>
+                    <Text style={styles.questionLabel}>
+                      {getQ("q_1e_rol", "Tu rol en la institución:").label}
+                    </Text>
+                    {eduOptions("q_1e_rol").map((opt) => {
+                      const active = eduRol === opt.value;
+                      return (
+                        <Pressable
+                          key={opt.value}
+                          onPress={() => setEduRol(opt.value)}
+                          style={[styles.optionBtn, active && styles.optionBtnActive]}
+                        >
+                          <Text
+                            style={[
+                              styles.optionBtnText,
+                              active && styles.optionBtnTextActive,
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                    {eduRol === "otro" && (
+                      <TextInput
+                        value={eduRolOtro}
+                        onChangeText={setEduRolOtro}
+                        maxLength={120}
+                        placeholder="¿Cuál? Describí tu rol..."
+                        style={styles.input}
+                      />
+                    )}
+                  </>
+                ) : null}
+              </View>
+            )}
           </View>
         )}
 
@@ -1030,13 +1208,19 @@ export function SurveyScreen({
             <Text style={styles.questionLabel}>
               1. Región Sanitaria (I a XII):
             </Text>
+            <Text style={styles.helperNote}>
+              Tocá una región para ver qué municipios le corresponden.
+            </Text>
             <View style={styles.chipsWrap}>
               {REGIONES_SANITARIAS.map((r) => {
                 const active = regionSanitaria === r.code;
                 return (
                   <Pressable
                     key={r.code}
-                    onPress={() => setRegionSanitaria(r.code)}
+                    onPress={() => selectRegion(r.code)}
+                    accessibilityHint={`Municipios: ${getMunicipiosByRegion(r.code)
+                      .map((m) => m.name)
+                      .join(", ")}`}
                     style={[styles.chip, active && styles.chipActive]}
                   >
                     <Text
@@ -1047,10 +1231,40 @@ export function SurveyScreen({
                   </Pressable>
                 );
               })}
+              <Pressable
+                onPress={() => selectRegion(REGION_NO_CALIFICA)}
+                style={[
+                  styles.chip,
+                  regionSanitaria === REGION_NO_CALIFICA && styles.chipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    regionSanitaria === REGION_NO_CALIFICA && styles.chipTextActive,
+                  ]}
+                >
+                  No califica
+                </Text>
+              </Pressable>
             </View>
+            {regionSanitaria && regionSanitaria !== REGION_NO_CALIFICA ? (
+              <View style={styles.regionInfoBox}>
+                <Text style={styles.regionInfoText}>
+                  <Text style={{ fontWeight: "800" }}>
+                    Municipios de la Región {regionSanitaria}:{" "}
+                  </Text>
+                  {getMunicipiosByRegion(regionSanitaria)
+                    .map((m) => m.name)
+                    .join(", ")}
+                </Text>
+              </View>
+            ) : null}
 
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
-              2. Municipio (135 municipios PBA):
+              {regionSanitaria === REGION_NO_CALIFICA
+                ? "2. Localidad:"
+                : "2. Municipio (135 municipios PBA):"}
             </Text>
             <TextInput
               value={municipioSearch}
@@ -1058,11 +1272,19 @@ export function SurveyScreen({
                 setMunicipioSearch(txt);
                 setMunicipio(txt);
               }}
-              placeholder="Buscá tu municipio..."
+              maxLength={120}
+              placeholder={
+                regionSanitaria === REGION_NO_CALIFICA
+                  ? "Escribí tu localidad (ciudad y provincia)..."
+                  : "Buscá tu municipio..."
+              }
               style={styles.input}
             />
             <View style={styles.chipsWrap}>
-              {filteredMunicipios.map((m) => {
+              {(regionSanitaria === REGION_NO_CALIFICA
+                ? []
+                : filteredMunicipios
+              ).map((m) => {
                 const active = municipio === m.name;
                 return (
                   <Pressable
@@ -1597,6 +1819,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     backgroundColor: "#ffffff",
     color: "#1e293b",
+  },
+  cascadeBox: {
+    marginTop: 4,
+    marginLeft: 8,
+    paddingLeft: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "rgba(86,124,127,0.4)",
+    gap: 10,
+  },
+  helperNote: {
+    fontSize: 12,
+    color: "#64748b",
+  },
+  regionInfoBox: {
+    backgroundColor: "#f3f6f7",
+    borderRadius: 10,
+    padding: 10,
+  },
+  regionInfoText: {
+    fontSize: 12,
+    color: "#334155",
+    lineHeight: 17,
   },
   chipsWrap: {
     flexDirection: "row",

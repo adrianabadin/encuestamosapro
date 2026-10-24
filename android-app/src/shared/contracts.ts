@@ -3,6 +3,7 @@ export {
   MUNICIPIOS_PBA,
   getMunicipiosByRegion,
   normalizeRegionCode,
+  REGION_NO_CALIFICA,
 } from "../../../src/lib/catalog/pba-municipios";
 
 export {
