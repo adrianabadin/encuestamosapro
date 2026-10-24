@@ -7,6 +7,7 @@ Branch: feat/educativas-region (from fix/security-hardening) | Delivery strategy
 - **S2 (Rol):** user decision "Sí, agregar rol" — options: Docente, Directivo/a, Equipo de orientación escolar, Auxiliar / no docente, Estudiante, Otro (opens «¿Cuál?», required).
 - **S3 (Región tooltip):** "que en las parte donde se selecciona la region sanitaria que 1) tenga un tooltip que diga que ciudades corresponden" — each Región sanitaria option shows which municipalities belong to it.
 - **S4 (No califica):** "2) que se agregue la opcion no califica". User decision: "Municipio pasa a texto libre" — with «No califica» the municipio question becomes a required free-text field (localidad) instead of the PBA list.
+- **S6 (Section 1 «Otros»):** "e n seccion 1 tambien un campo que diga otros y que sea texto libre" — option `otro` «Otros» in `q_main_location` (requiresSpecify, specifyLabel «¿Cuál?»); selecting it shows a required free-text field stored as `mainLocationOtro`; flow goes S1 → S3 like educativas; exported as `S1_Espacio_Otro`; counted in admin as «Otros».
 - **S5 (Data, export, admin):** the new answers are stored, validated, exported to CSV/XLSX and counted in the admin stats like the other Section 1/2 branches.
 
 ## Contract (shared by web and Android)
@@ -23,8 +24,11 @@ Branch: feat/educativas-region (from fix/security-hardening) | Delivery strategy
 - **T1** [S1, S2, S3, S4, S5] (inline — gentle-ai-worker unavailable: "No API key found for xiaomi-token-plan-sgp"; user said "continua") — shared contract (schema, validator, flow-helpers, catalog constant), web wizard (cascade, region tooltip, No califica + free-text municipio), exporter, admin stats label, tests — `done` (commit `e311165`; RED 6/9 → GREEN; tsc 0, suite 49/49, build OK)
 - **T2** [S1, S2, S3, S4] (inline — worker unavailable; after T1) — Android SurveyScreen cascade, region info + No califica + free-text municipio, contracts re-export — `done` (commit `64bad31`; android tsc 0, shared contract + android tests 17/17, Android bundle 651 modules; no Android UI unit test exists)
 
+- **T3** [S6] (inline — small, same pattern as T1/T2) — «Otros» with free text in Section 1, web + Android — `done` (commit `907e600`; RED 4 → GREEN; web tsc 0, suite 53/53, build OK; android tsc 0, bundle 651 modules)
+
 ## Log
 
 - **L1 (2026-10-22):** User request: "antes de esto quiero que agreguemos en las opciones de seccion 1 La Opcion de Instituciones Educativas de los 3 niveles(primario,secundario,terciario y universitario) y de las 3 jurisdicciones (municipal,provincial, nacional) quiero que las subopcionnes aparezcan dependiendo lo que se va seleccionando y que en las parte donde se selecciona la region sanitaria que 1) tenga un tooltip que diga que ciudades corresponden 2) que se agregue la opcion no califica"
 - **L2 (2026-10-22):** Decisions: "En la misma Sección 1, en cascada"; "Sí, agregar rol"; "Municipio pasa a texto libre".
+- **L4 (2026-10-22):** User: "e n seccion 1 tambien un campo que diga otros y que sea texto libre".
 - **L3 (2026-10-22):** Uncommitted privacy page (`src/app/privacidad/`, footer link in `src/app/page.tsx`) and Play icon (`android-app/store/`) belong to the previous small task; they stay out of this feature's commits.
