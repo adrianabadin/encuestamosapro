@@ -23,7 +23,10 @@ export default function HomePage() {
             MOSAPRO — Movimiento Sanitario Provincial
           </span>
           <span className="text-white/80">
-            Relevamiento anónimo y confidencial · Funciona con o sin conexión a internet
+            Relevamiento anónimo y confidencial · Funciona con o sin conexión a internet ·{" "}
+            <a href="/privacidad" className="underline hover:text-white">
+              Política de privacidad
+            </a>
           </span>
         </div>
       </footer>
