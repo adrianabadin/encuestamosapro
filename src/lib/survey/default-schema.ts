@@ -201,6 +201,7 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
           type: "single_choice",
           required: true,
           order: 1,
+          specifyLabel: "¿Cuál?",
           options: [
             {
               value: "primer_nivel",
@@ -227,6 +228,12 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
               value: "institucion_educativa",
               label: "Instituciones educativas",
               nextSection: "S3",
+            },
+            {
+              value: "otro",
+              label: "Otros",
+              nextSection: "S3",
+              requiresSpecify: true,
             },
           ],
         },

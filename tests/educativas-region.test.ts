@@ -204,3 +204,51 @@ describe("Existing branches keep their behaviour", () => {
     expect(hospitalMissing.valid).toBe(false);
   });
 });
+
+describe("Section 1 «Otros» with free text (S6)", () => {
+  const otros = {
+    ...common,
+    mainLocation: "otro" as const,
+    mainLocationOtro: "Hogar de ancianos",
+  };
+
+  it("adds the «Otros» option with a «¿Cuál?» specifier", () => {
+    const opt = q("q_main_location")?.options?.find((o) => o.value === "otro");
+    expect(opt?.label).toBe("Otros");
+    expect(opt?.requiresSpecify).toBe(true);
+    expect(q("q_main_location")?.specifyLabel).toBe("¿Cuál?");
+  });
+
+  it("goes from S1 straight to S3", () => {
+    expect(getActiveSectionIds("otro")).toEqual(["S0", "S1", "S3", "S4", "S5"]);
+  });
+
+  it("requires the free text when «Otros» is chosen", () => {
+    expect(validateSurveySubmission(otros).valid).toBe(true);
+    const empty = validateSurveySubmission({ ...otros, mainLocationOtro: "  " });
+    expect(empty.valid).toBe(false);
+    expect(empty.errors.some((e) => e.includes("Cuál"))).toBe(true);
+  });
+
+  it("exports the free text in S1_Espacio_Otro", () => {
+    const row = flattenSurveyResponseRow({
+      id: 2,
+      clientSubmissionId: "otro-1",
+      surveyVersion: 3,
+      sourcePlatform: "web",
+      isComplete: true,
+      currentStep: "S5",
+      regionSanitaria: "XI",
+      municipio: "La Plata",
+      mainLocation: "otro",
+      antiguedad: "5_a_10",
+      relacionZonal: "regular",
+      interesaMesa: "no",
+      ofreceReferente: null,
+      payload: otros,
+      createdAtClient: null,
+      syncedAt: new Date().toISOString(),
+    });
+    expect(row.S1_Espacio_Otro).toBe("Hogar de ancianos");
+  });
+});

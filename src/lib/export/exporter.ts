@@ -63,6 +63,7 @@ export function flattenSurveyResponseRow(r: StoredSurveyResponse): Record<string
     S2D_Rol_Gestion: p.section2D?.rolGestion || "",
     S2D_Rol_Gestion_Otra: p.section2D?.rolGestionOtra || "",
     S2D_Area_O_Direccion: p.section2D?.areaEspacio || "",
+    S1_Espacio_Otro: p.mainLocationOtro || "",
     S1E_Nivel_Educativo: p.sectionEducativa?.nivel || "",
     S1E_Jurisdiccion: p.sectionEducativa?.jurisdiccion || "",
     S1E_Rol: p.sectionEducativa?.rol || "",

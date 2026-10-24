@@ -129,6 +129,9 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
   const [s2dRolOtra, setS2dRolOtra] = useState("");
   const [s2dArea, setS2dArea] = useState("");
 
+  // Section 1 «Otros» free text
+  const [mainLocationOtro, setMainLocationOtro] = useState("");
+
   // 1E (Instituciones educativas, inline cascade in Section 1)
   const [eduNivel, setEduNivel] = useState("");
   const [eduJurisdiccion, setEduJurisdiccion] = useState("");
@@ -197,6 +200,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           if (parsed.s2dRol) setS2dRol(parsed.s2dRol);
           if (parsed.s2dRolOtra) setS2dRolOtra(parsed.s2dRolOtra);
           if (parsed.s2dArea) setS2dArea(parsed.s2dArea);
+          if (parsed.mainLocationOtro)
+            setMainLocationOtro(parsed.mainLocationOtro);
           if (parsed.eduNivel) setEduNivel(parsed.eduNivel);
           if (parsed.eduJurisdiccion)
             setEduJurisdiccion(parsed.eduJurisdiccion);
@@ -509,6 +514,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           s2dRol,
           s2dRolOtra,
           s2dArea,
+          mainLocationOtro,
           eduNivel,
           eduJurisdiccion,
           eduRol,
@@ -557,6 +563,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     s2dRol,
     s2dRolOtra,
     s2dArea,
+    mainLocationOtro,
     eduNivel,
     eduJurisdiccion,
     eduRol,
@@ -604,7 +611,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         | "comunitario"
         | "gestion_sanitaria"
         | "institucion_educativa"
+        | "otro"
         | undefined,
+      mainLocationOtro:
+        mainLocation === "otro" ? mainLocationOtro : undefined,
       sectionEducativa:
         mainLocation === "institucion_educativa"
           ? {
@@ -718,6 +728,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         errs.push(
           "Seleccioná dónde realizás tu tarea principal para continuar."
         );
+      } else if (mainLocation === "otro" && !mainLocationOtro.trim()) {
+        errs.push("Especificá ¿Cuál? es tu espacio de trabajo.");
       } else if (mainLocation === "institucion_educativa") {
         if (!eduNivel) errs.push("Seleccioná el nivel de la institución educativa.");
         if (!eduJurisdiccion)
@@ -921,6 +933,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     setS2dRol("");
     setS2dRolOtra("");
     setS2dArea("");
+    setMainLocationOtro("");
     setEduNivel("");
     setEduJurisdiccion("");
     setEduRol("");
@@ -1219,6 +1232,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   value: "institucion_educativa",
                   label: "Instituciones educativas",
                 },
+                {
+                  value: "otro",
+                  label: "Otros",
+                },
               ].map((opt) => {
                 const selected = mainLocation === opt.value;
                 return (
@@ -1250,6 +1267,23 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                 );
               })}
             </div>
+
+            {mainLocation === "otro" && (
+              <div className="ml-2 sm:ml-6 pl-4 border-l-4 border-[#567c7f]/40 pt-1">
+                <label className="block text-sm font-bold text-slate-900 mb-1">
+                  {getQ("q_main_location", "").specifyLabel || "¿Cuál?"}{" "}
+                  <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={mainLocationOtro}
+                  onChange={(e) => setMainLocationOtro(e.target.value)}
+                  maxLength={200}
+                  placeholder="Describí dónde realizás tu tarea principal..."
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] outline-none text-sm bg-white"
+                />
+              </div>
+            )}
 
             {/* Instituciones educativas: nivel → jurisdicción → rol, revealed in cascade */}
             {mainLocation === "institucion_educativa" && (

@@ -6,12 +6,13 @@ export type MainLocationType =
   | "comunitario"
   | "gestion_sanitaria"
   | "institucion_educativa"
+  | "otro"
   | "";
 
 export function getActiveSectionIds(mainLocation?: MainLocationType): string[] {
-  // Educational institutions answer nivel/jurisdicción/rol inline in S1 and
-  // have no Section 2 branch.
-  if (mainLocation === "institucion_educativa") {
+  // Educational institutions (nivel/jurisdicción/rol) and «Otros» (free
+  // text) are answered inline in S1 and have no Section 2 branch.
+  if (mainLocation === "institucion_educativa" || mainLocation === "otro") {
     return ["S0", "S1", "S3", "S4", "S5"];
   }
   const branch =

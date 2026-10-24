@@ -156,6 +156,11 @@ export function SurveyScreen({
     (initialDraft?.s2dArea as string) || ""
   );
 
+  // Section 1 «Otros» free text
+  const [mainLocationOtro, setMainLocationOtro] = useState(
+    (initialDraft?.mainLocationOtro as string) || ""
+  );
+
   // 1E (Instituciones educativas, inline cascade in Section 1)
   const [eduNivel, setEduNivel] = useState(
     (initialDraft?.eduNivel as string) || ""
@@ -349,7 +354,9 @@ export function SurveyScreen({
       | "comunitario"
       | "gestion_sanitaria"
       | "institucion_educativa"
+      | "otro"
       | undefined,
+    mainLocationOtro: mainLocation === "otro" ? mainLocationOtro : undefined,
     section2A:
       mainLocation === "primer_nivel"
         ? { tarea: s2aTarea, tareaOtra: s2aTareaOtra }
@@ -444,6 +451,7 @@ export function SurveyScreen({
     s2dRol,
     s2dRolOtra,
     s2dArea,
+    mainLocationOtro,
     eduNivel,
     eduJurisdiccion,
     eduRol,
@@ -476,6 +484,8 @@ export function SurveyScreen({
     } else if (currentSectionId === "S1") {
       if (!mainLocation)
         errs.push("Seleccioná dónde realizás tu tarea principal.");
+      else if (mainLocation === "otro" && !mainLocationOtro.trim())
+        errs.push("Especificá ¿Cuál? es tu espacio de trabajo.");
       else if (mainLocation === "institucion_educativa") {
         if (!eduNivel) errs.push("Seleccioná el nivel de la institución educativa.");
         if (!eduJurisdiccion)
@@ -786,6 +796,10 @@ export function SurveyScreen({
                 value: "institucion_educativa",
                 label: "Instituciones educativas",
               },
+              {
+                value: "otro",
+                label: "Otros",
+              },
             ].map((opt) => {
               const active = mainLocation === opt.value;
               return (
@@ -805,6 +819,19 @@ export function SurveyScreen({
                 </Pressable>
               );
             })}
+
+            {mainLocation === "otro" && (
+              <View style={styles.cascadeBox}>
+                <Text style={styles.questionLabel}>¿Cuál? *</Text>
+                <TextInput
+                  value={mainLocationOtro}
+                  onChangeText={setMainLocationOtro}
+                  maxLength={200}
+                  placeholder="Describí dónde realizás tu tarea principal..."
+                  style={styles.input}
+                />
+              </View>
+            )}
 
             {/* Instituciones educativas: nivel → jurisdicción → rol in cascade */}
             {mainLocation === "institucion_educativa" && (

@@ -861,6 +861,10 @@ export default function AdminPage() {
                       key: "institucion_educativa",
                       label: "Instituciones educativas (Primario a Universitario)",
                     },
+                    {
+                      key: "otro",
+                      label: "Otros (texto libre)",
+                    },
                   ].map((item) => (
                     <div
                       key={item.key}

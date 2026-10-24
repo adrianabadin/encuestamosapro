@@ -28,7 +28,9 @@ export interface SurveySubmissionPayload {
     | "hospital"
     | "comunitario"
     | "gestion_sanitaria"
-    | "institucion_educativa";
+    | "institucion_educativa"
+    | "otro";
+  mainLocationOtro?: string;
   sectionEducativa?: {
     nivel: string;
     jurisdiccion: string;
@@ -135,6 +137,7 @@ export function validateSurveySubmission(
       "comunitario",
       "gestion_sanitaria",
       "institucion_educativa",
+      "otro",
     ].includes(payload.mainLocation)
   ) {
     errors.push(
@@ -199,6 +202,12 @@ export function validateSurveySubmission(
           "En Sección 2C elegiste «Otro» en tu rol: por favor especificá ¿Cuál?."
         );
       }
+    }
+  } else if (payload.mainLocation === "otro") {
+    if (!payload.mainLocationOtro?.trim()) {
+      errors.push(
+        "En Sección 1 elegiste «Otros»: por favor especificá ¿Cuál? es tu espacio de trabajo."
+      );
     }
   } else if (payload.mainLocation === "institucion_educativa") {
     const edu = payload.sectionEducativa;
