@@ -26,6 +26,9 @@ import {
 } from "@/lib/survey/validator";
 import {
   REGIONES_SANITARIAS,
+  REGION_NO_CALIFICA,
+  MUNICIPIOS_PBA,
+  getMunicipiosByRegion,
   normalizeRegionCode,
 } from "@/lib/catalog/pba-municipios";
 import {
@@ -48,6 +51,9 @@ const ACTIVE_DRAFT_STORAGE_KEY = "mosapro_active_draft_v2";
 const BUILTIN_QUESTION_IDS = new Set([
   "q_consent",
   "q_main_location",
+  "q_1e_nivel",
+  "q_1e_jurisdiccion",
+  "q_1e_rol",
   "q_2a_tarea",
   "q_2b_tipo_hospital",
   "q_2b_tarea",
@@ -123,6 +129,12 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
   const [s2dRolOtra, setS2dRolOtra] = useState("");
   const [s2dArea, setS2dArea] = useState("");
 
+  // 1E (Instituciones educativas, inline cascade in Section 1)
+  const [eduNivel, setEduNivel] = useState("");
+  const [eduJurisdiccion, setEduJurisdiccion] = useState("");
+  const [eduRol, setEduRol] = useState("");
+  const [eduRolOtro, setEduRolOtro] = useState("");
+
   // Section 3
   const [regionSanitaria, setRegionSanitaria] = useState("");
   const [regionLockedFromLink, setRegionLockedFromLink] = useState(false);
@@ -185,6 +197,11 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           if (parsed.s2dRol) setS2dRol(parsed.s2dRol);
           if (parsed.s2dRolOtra) setS2dRolOtra(parsed.s2dRolOtra);
           if (parsed.s2dArea) setS2dArea(parsed.s2dArea);
+          if (parsed.eduNivel) setEduNivel(parsed.eduNivel);
+          if (parsed.eduJurisdiccion)
+            setEduJurisdiccion(parsed.eduJurisdiccion);
+          if (parsed.eduRol) setEduRol(parsed.eduRol);
+          if (parsed.eduRolOtro) setEduRolOtro(parsed.eduRolOtro);
           if (parsed.regionSanitaria)
             setRegionSanitaria(parsed.regionSanitaria);
           if (parsed.municipio) setMunicipio(parsed.municipio);
@@ -448,6 +465,21 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     );
   };
 
+  // Selecting a region. Leaving «No califica» drops a free-text localidad that
+  // is not a PBA municipality so the autocomplete starts clean.
+  const selectRegion = (code: string) => {
+    if (
+      regionSanitaria === REGION_NO_CALIFICA &&
+      code !== REGION_NO_CALIFICA &&
+      !MUNICIPIOS_PBA.some(
+        (m) => m.name.toLowerCase() === municipio.trim().toLowerCase()
+      )
+    ) {
+      setMunicipio("");
+    }
+    setRegionSanitaria(code);
+  };
+
   const extraSectionQuestions = (currentSection?.questions || []).filter(
     (q) => !BUILTIN_QUESTION_IDS.has(q.id)
   );
@@ -477,6 +509,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           s2dRol,
           s2dRolOtra,
           s2dArea,
+          eduNivel,
+          eduJurisdiccion,
+          eduRol,
+          eduRolOtro,
           regionSanitaria,
           municipio,
           antiguedad,
@@ -521,6 +557,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     s2dRol,
     s2dRolOtra,
     s2dArea,
+    eduNivel,
+    eduJurisdiccion,
+    eduRol,
+    eduRolOtro,
     regionSanitaria,
     municipio,
     antiguedad,
@@ -563,7 +603,17 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         | "hospital"
         | "comunitario"
         | "gestion_sanitaria"
+        | "institucion_educativa"
         | undefined,
+      sectionEducativa:
+        mainLocation === "institucion_educativa"
+          ? {
+              nivel: eduNivel,
+              jurisdiccion: eduJurisdiccion,
+              rol: eduRol,
+              rolOtro: eduRol === "otro" ? eduRolOtro : "",
+            }
+          : undefined,
       section2A:
         mainLocation === "primer_nivel"
           ? { tarea: s2aTarea, tareaOtra: s2aTareaOtra }
@@ -668,6 +718,17 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         errs.push(
           "Seleccioná dónde realizás tu tarea principal para continuar."
         );
+      } else if (mainLocation === "institucion_educativa") {
+        if (!eduNivel) errs.push("Seleccioná el nivel de la institución educativa.");
+        if (!eduJurisdiccion)
+          errs.push(
+            "Seleccioná la jurisdicción de la institución (Municipal, Provincial o Nacional)."
+          );
+        if (!eduRol) {
+          errs.push("Seleccioná tu rol en la institución educativa.");
+        } else if (eduRol === "otro" && !eduRolOtro.trim()) {
+          errs.push("Especificá ¿Cuál? en tu rol.");
+        }
       }
     } else if (currentSectionId === "S2A") {
       if (!s2aTarea) {
@@ -716,8 +777,13 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         );
       }
     } else if (currentSectionId === "S3") {
-      if (!regionSanitaria) errs.push("Seleccioná tu Región Sanitaria.");
-      if (!municipio.trim()) errs.push("Indicá tu Municipio.");
+      if (!regionSanitaria) errs.push("Seleccioná tu Región Sanitaria o «No califica».");
+      if (!municipio.trim())
+        errs.push(
+          regionSanitaria === REGION_NO_CALIFICA
+            ? "Escribí tu localidad."
+            : "Indicá tu Municipio."
+        );
       if (!antiguedad) errs.push("Seleccioná tu antigüedad en la tarea.");
     } else if (currentSectionId === "S4") {
       // Note: 4.2, 4.3, 4.4 problem/proposal are NOT blocking per user requirement
@@ -855,6 +921,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
     setS2dRol("");
     setS2dRolOtra("");
     setS2dArea("");
+    setEduNivel("");
+    setEduJurisdiccion("");
+    setEduRol("");
+    setEduRolOtro("");
     if (!regionLockedFromLink) setRegionSanitaria("");
     setMunicipio("");
     setAntiguedad("");
@@ -1145,6 +1215,10 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   value: "gestion_sanitaria",
                   label: "Gestión sanitaria",
                 },
+                {
+                  value: "institucion_educativa",
+                  label: "Instituciones educativas",
+                },
               ].map((opt) => {
                 const selected = mainLocation === opt.value;
                 return (
@@ -1176,6 +1250,82 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                 );
               })}
             </div>
+
+            {/* Instituciones educativas: nivel → jurisdicción → rol, revealed in cascade */}
+            {mainLocation === "institucion_educativa" && (
+              <div className="ml-2 sm:ml-6 pl-4 border-l-4 border-[#567c7f]/40 space-y-5 pt-1">
+                <div>
+                  <label className="block text-sm font-bold text-slate-900 mb-2">
+                    {getQ("q_1e_nivel", "Nivel educativo:").label}
+                  </label>
+                  {renderFlexibleQuestionControl({
+                    questionId: "q_1e_nivel",
+                    fallbackLabel: "Nivel educativo:",
+                    fallbackOptions: DEFAULT_SURVEY_SCHEMA.sections
+                      .find((s) => s.id === "S1")
+                      ?.questions.find((x) => x.id === "q_1e_nivel")?.options,
+                    value: eduNivel,
+                    onChange: (v) => {
+                      if (v !== eduNivel) {
+                        setEduJurisdiccion("");
+                        setEduRol("");
+                        setEduRolOtro("");
+                      }
+                      setEduNivel(v);
+                    },
+                    gridCols: "grid grid-cols-2 sm:grid-cols-4 gap-2.5",
+                  })}
+                </div>
+
+                {eduNivel && (
+                  <div>
+                    <label className="block text-sm font-bold text-slate-900 mb-2">
+                      {
+                        getQ("q_1e_jurisdiccion", "Jurisdicción de la institución:")
+                          .label
+                      }
+                    </label>
+                    {renderFlexibleQuestionControl({
+                      questionId: "q_1e_jurisdiccion",
+                      fallbackLabel: "Jurisdicción de la institución:",
+                      fallbackOptions: DEFAULT_SURVEY_SCHEMA.sections
+                        .find((s) => s.id === "S1")
+                        ?.questions.find((x) => x.id === "q_1e_jurisdiccion")
+                        ?.options,
+                      value: eduJurisdiccion,
+                      onChange: (v) => {
+                        if (v !== eduJurisdiccion) {
+                          setEduRol("");
+                          setEduRolOtro("");
+                        }
+                        setEduJurisdiccion(v);
+                      },
+                      gridCols: "grid grid-cols-1 sm:grid-cols-3 gap-2.5",
+                    })}
+                  </div>
+                )}
+
+                {eduNivel && eduJurisdiccion && (
+                  <div>
+                    <label className="block text-sm font-bold text-slate-900 mb-2">
+                      {getQ("q_1e_rol", "Tu rol en la institución:").label}
+                    </label>
+                    {renderFlexibleQuestionControl({
+                      questionId: "q_1e_rol",
+                      fallbackLabel: "Tu rol en la institución:",
+                      fallbackOptions: DEFAULT_SURVEY_SCHEMA.sections
+                        .find((s) => s.id === "S1")
+                        ?.questions.find((x) => x.id === "q_1e_rol")?.options,
+                      value: eduRol,
+                      onChange: setEduRol,
+                      specifyValue: eduRolOtro,
+                      onChangeSpecify: setEduRolOtro,
+                      specifyPlaceholder: "Describí tu rol en la institución...",
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1383,34 +1533,97 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   Precargada automáticamente desde el enlace regional (podés cambiarla si corresponde).
                 </p>
               )}
-              <select
-                value={regionSanitaria}
-                onChange={(e) => setRegionSanitaria(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] bg-white outline-none text-base"
-              >
-                <option value="">Seleccioná una Región Sanitaria...</option>
-                {REGIONES_SANITARIAS.map((r) => (
-                  <option key={r.code} value={r.code}>
-                    {r.name} — Sede {r.sede}
-                  </option>
-                ))}
-              </select>
+              <p className="text-xs text-slate-500 mb-2">
+                Pasá el mouse o enfocá cada región para ver qué municipios le corresponden.
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                {REGIONES_SANITARIAS.map((r) => {
+                  const selected = regionSanitaria === r.code;
+                  const munis = getMunicipiosByRegion(r.code)
+                    .map((m) => m.name)
+                    .join(", ");
+                  return (
+                    <div key={r.code} className="relative group">
+                      <button
+                        type="button"
+                        title={`Región ${r.code} (sede ${r.sede}): ${munis}`}
+                        aria-describedby={`region-tip-${r.code}`}
+                        onClick={() => selectRegion(r.code)}
+                        className={`w-full py-2.5 rounded-xl border text-sm transition cursor-pointer ${
+                          selected
+                            ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
+                            : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
+                        }`}
+                      >
+                        Región {r.code}
+                      </button>
+                      <div
+                        id={`region-tip-${r.code}`}
+                        role="tooltip"
+                        className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 z-30 rounded-lg bg-[#1f2f40] text-white text-xs leading-snug p-3 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition"
+                      >
+                        <span className="font-bold">
+                          Región {r.code} · sede {r.sede}
+                        </span>
+                        <br />
+                        {munis}
+                      </div>
+                    </div>
+                  );
+                })}
+                <button
+                  type="button"
+                  title="Mi lugar de trabajo no pertenece a ninguna Región Sanitaria de la Provincia de Buenos Aires"
+                  onClick={() => selectRegion(REGION_NO_CALIFICA)}
+                  className={`col-span-3 sm:col-span-2 py-2.5 rounded-xl border text-sm transition cursor-pointer ${
+                    regionSanitaria === REGION_NO_CALIFICA
+                      ? "border-[#567c7f] bg-[#567c7f] text-white font-bold"
+                      : "border-slate-200 hover:border-[#567c7f] text-slate-800 font-medium"
+                  }`}
+                >
+                  No califica
+                </button>
+              </div>
+              {regionSanitaria && regionSanitaria !== REGION_NO_CALIFICA && (
+                <p className="mt-2 text-xs text-slate-600 bg-[#f3f6f7] rounded-lg p-2.5">
+                  <span className="font-bold text-[#3f5f61]">
+                    Municipios de la Región {regionSanitaria}:
+                  </span>{" "}
+                  {getMunicipiosByRegion(regionSanitaria)
+                    .map((m) => m.name)
+                    .join(", ")}
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-1">
-                2. {getQ("q_3_municipio", "Municipio:").label}
+                2.{" "}
+                {regionSanitaria === REGION_NO_CALIFICA
+                  ? "Localidad:"
+                  : getQ("q_3_municipio", "Municipio:").label}
               </label>
-              <MunicipioAutocomplete
-                regionCode={regionSanitaria}
-                value={municipio}
-                onChange={(mun, detectedReg) => {
-                  setMunicipio(mun);
-                  if (!regionSanitaria && detectedReg) {
-                    setRegionSanitaria(detectedReg);
-                  }
-                }}
-              />
+              {regionSanitaria === REGION_NO_CALIFICA ? (
+                <input
+                  type="text"
+                  value={municipio}
+                  onChange={(e) => setMunicipio(e.target.value)}
+                  maxLength={120}
+                  placeholder="Escribí tu localidad (por ejemplo, ciudad y provincia)"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#567c7f] outline-none text-base bg-white"
+                />
+              ) : (
+                <MunicipioAutocomplete
+                  regionCode={regionSanitaria}
+                  value={municipio}
+                  onChange={(mun, detectedReg) => {
+                    setMunicipio(mun);
+                    if (!regionSanitaria && detectedReg) {
+                      setRegionSanitaria(detectedReg);
+                    }
+                  }}
+                />
+              )}
             </div>
 
             <div>

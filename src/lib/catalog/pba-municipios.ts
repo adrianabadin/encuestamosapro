@@ -9,6 +9,10 @@ export interface MunicipioPBA {
   regionCode: string;
 }
 
+// Selectable in the survey when the respondent's place does not belong to any
+// PBA Región Sanitaria; the municipio is then a free-text localidad.
+export const REGION_NO_CALIFICA = "no_califica";
+
 export const REGIONES_SANITARIAS: RegionSanitaria[] = [
   { code: "I", name: "Región Sanitaria I", sede: "Bahía Blanca" },
   { code: "II", name: "Región Sanitaria II", sede: "Pehuajó" },

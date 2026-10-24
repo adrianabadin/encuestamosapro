@@ -817,6 +817,19 @@ export default function AdminPage() {
                       </div>
                     );
                   })}
+                  <div className="p-3 rounded-xl bg-[#f3f1ee] border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-[#5a4f49]">
+                        No califica
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Fuera de las regiones
+                      </div>
+                    </div>
+                    <span className="text-lg font-black text-slate-800">
+                      {stats?.byRegion?.["no_califica"] || 0}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -843,6 +856,10 @@ export default function AdminPage() {
                       key: "gestion_sanitaria",
                       label:
                         "Gestión Sanitaria (Nacional / Provincial / Municipal)",
+                    },
+                    {
+                      key: "institucion_educativa",
+                      label: "Instituciones educativas (Primario a Universitario)",
                     },
                   ].map((item) => (
                     <div

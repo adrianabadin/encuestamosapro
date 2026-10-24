@@ -5,9 +5,15 @@ export type MainLocationType =
   | "hospital"
   | "comunitario"
   | "gestion_sanitaria"
+  | "institucion_educativa"
   | "";
 
 export function getActiveSectionIds(mainLocation?: MainLocationType): string[] {
+  // Educational institutions answer nivel/jurisdicción/rol inline in S1 and
+  // have no Section 2 branch.
+  if (mainLocation === "institucion_educativa") {
+    return ["S0", "S1", "S3", "S4", "S5"];
+  }
   const branch =
     mainLocation === "primer_nivel"
       ? "S2A"

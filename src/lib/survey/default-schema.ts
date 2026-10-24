@@ -156,7 +156,7 @@ export const DEFAULT_THEMES: SurveyTheme[] = [
 ];
 
 export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
-  version: 2,
+  version: 3,
   title: "Relevamiento Sanitario Territorial — MOSAPRO",
   subtitle:
     "Movimiento Sanitario Provincial · Hacia una construcción colectiva del sistema de salud bonaerense",
@@ -223,6 +223,73 @@ export const DEFAULT_SURVEY_SCHEMA: SurveySchema = {
               label: "Gestión sanitaria",
               nextSection: "S2D",
             },
+            {
+              value: "institucion_educativa",
+              label: "Instituciones educativas",
+              nextSection: "S3",
+            },
+          ],
+        },
+        {
+          id: "q_1e_nivel",
+          sectionId: "S1",
+          code: "1.2",
+          label: "Nivel educativo:",
+          type: "single_choice",
+          required: true,
+          order: 2,
+          condition: {
+            dependsOnQuestionId: "q_main_location",
+            allowedValues: ["institucion_educativa"],
+          },
+          options: [
+            { value: "primario", label: "Primario" },
+            { value: "secundario", label: "Secundario" },
+            { value: "terciario", label: "Terciario" },
+            { value: "universitario", label: "Universitario" },
+          ],
+        },
+        {
+          id: "q_1e_jurisdiccion",
+          sectionId: "S1",
+          code: "1.3",
+          label: "Jurisdicción de la institución:",
+          type: "single_choice",
+          required: true,
+          order: 3,
+          condition: {
+            dependsOnQuestionId: "q_main_location",
+            allowedValues: ["institucion_educativa"],
+          },
+          options: [
+            { value: "municipal", label: "Municipal" },
+            { value: "provincial", label: "Provincial" },
+            { value: "nacional", label: "Nacional" },
+          ],
+        },
+        {
+          id: "q_1e_rol",
+          sectionId: "S1",
+          code: "1.4",
+          label: "Tu rol en la institución:",
+          type: "single_choice",
+          required: true,
+          order: 4,
+          specifyLabel: "¿Cuál?",
+          condition: {
+            dependsOnQuestionId: "q_main_location",
+            allowedValues: ["institucion_educativa"],
+          },
+          options: [
+            { value: "docente", label: "Docente" },
+            { value: "directivo", label: "Directivo/a" },
+            {
+              value: "equipo_orientacion",
+              label: "Equipo de orientación escolar",
+            },
+            { value: "no_docente", label: "Auxiliar / no docente" },
+            { value: "estudiante", label: "Estudiante" },
+            { value: "otro", label: "Otro", requiresSpecify: true },
           ],
         },
       ],

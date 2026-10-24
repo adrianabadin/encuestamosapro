@@ -27,7 +27,14 @@ export interface SurveySubmissionPayload {
     | "primer_nivel"
     | "hospital"
     | "comunitario"
-    | "gestion_sanitaria";
+    | "gestion_sanitaria"
+    | "institucion_educativa";
+  sectionEducativa?: {
+    nivel: string;
+    jurisdiccion: string;
+    rol: string;
+    rolOtro?: string;
+  };
   section2A?: {
     tarea: string;
     tareaOtra?: string;
@@ -127,6 +134,7 @@ export function validateSurveySubmission(
       "hospital",
       "comunitario",
       "gestion_sanitaria",
+      "institucion_educativa",
     ].includes(payload.mainLocation)
   ) {
     errors.push(
@@ -191,6 +199,23 @@ export function validateSurveySubmission(
           "En Sección 2C elegiste «Otro» en tu rol: por favor especificá ¿Cuál?."
         );
       }
+    }
+  } else if (payload.mainLocation === "institucion_educativa") {
+    const edu = payload.sectionEducativa;
+    if (!edu?.nivel?.trim()) {
+      errors.push("En Sección 1 debés indicar el nivel de la institución educativa.");
+    }
+    if (!edu?.jurisdiccion?.trim()) {
+      errors.push(
+        "En Sección 1 debés indicar la jurisdicción de la institución educativa (municipal, provincial o nacional)."
+      );
+    }
+    if (!edu?.rol?.trim()) {
+      errors.push("En Sección 1 debés indicar tu rol en la institución educativa.");
+    } else if (edu.rol === "otro" && !edu.rolOtro?.trim()) {
+      errors.push(
+        "En Sección 1 elegiste «Otro» en tu rol: por favor especificá ¿Cuál?."
+      );
     }
   } else if (payload.mainLocation === "gestion_sanitaria") {
     const s2d = payload.section2D;
