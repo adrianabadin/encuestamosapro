@@ -20,8 +20,8 @@ Branch: feat/educativas-region (from fix/security-hardening) | Delivery strategy
 
 ## Tasks
 
-- **T1** [S1, S2, S3, S4, S5] (inline — gentle-ai-worker unavailable: "No API key found for xiaomi-token-plan-sgp"; user said "continua") — shared contract (schema, validator, flow-helpers, catalog constant), web wizard (cascade, region tooltip, No califica + free-text municipio), exporter, admin stats label, tests — `pending`
-- **T2** [S1, S2, S3, S4] (inline — worker unavailable; after T1) — Android SurveyScreen cascade, region info + No califica + free-text municipio, contracts re-export — `pending`
+- **T1** [S1, S2, S3, S4, S5] (inline — gentle-ai-worker unavailable: "No API key found for xiaomi-token-plan-sgp"; user said "continua") — shared contract (schema, validator, flow-helpers, catalog constant), web wizard (cascade, region tooltip, No califica + free-text municipio), exporter, admin stats label, tests — `done` (commit `e311165`; RED 6/9 → GREEN; tsc 0, suite 49/49, build OK)
+- **T2** [S1, S2, S3, S4] (inline — worker unavailable; after T1) — Android SurveyScreen cascade, region info + No califica + free-text municipio, contracts re-export — `done` (commit `64bad31`; android tsc 0, shared contract + android tests 17/17, Android bundle 651 modules; no Android UI unit test exists)
 
 ## Log
 
