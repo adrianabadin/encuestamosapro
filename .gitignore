@@ -35,4 +35,5 @@ next-env.d.ts
 .planning/project-memory-context/graph/graph.db
 .planning/project-memory-context/graph/graph.db-shm
 .planning/project-memory-context/graph/graph.db-wal
+.planning/project-memory-context/embedding-cache/
 graphify-out/

@@ -1115,6 +1115,9 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               {currentSection.description}
             </p>
           )}
+          <p className="text-xs text-slate-500 mt-2">
+            Los campos marcados con <span className="text-red-600 font-bold">*</span> son obligatorios.
+          </p>
         </div>
 
         {stepErrors.length > 0 && (
@@ -1206,7 +1209,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                   "q_main_location",
                   "¿Dónde realizás tu tarea principal?"
                 ).label
-              }
+              }{" "}
+              <span className="text-red-600">*</span>
             </label>
             <div className="space-y-3">
               {[
@@ -1290,7 +1294,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
               <div className="ml-2 sm:ml-6 pl-4 border-l-4 border-[#567c7f]/40 space-y-5 pt-1">
                 <div>
                   <label className="block text-sm font-bold text-slate-900 mb-2">
-                    {getQ("q_1e_nivel", "Nivel educativo:").label}
+                    {getQ("q_1e_nivel", "Nivel educativo:").label}{" "}
+                    <span className="text-red-600">*</span>
                   </label>
                   {renderFlexibleQuestionControl({
                     questionId: "q_1e_nivel",
@@ -1317,7 +1322,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                       {
                         getQ("q_1e_jurisdiccion", "Jurisdicción de la institución:")
                           .label
-                      }
+                      }{" "}
+                      <span className="text-red-600">*</span>
                     </label>
                     {renderFlexibleQuestionControl({
                       questionId: "q_1e_jurisdiccion",
@@ -1342,7 +1348,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                 {eduNivel && eduJurisdiccion && (
                   <div>
                     <label className="block text-sm font-bold text-slate-900 mb-2">
-                      {getQ("q_1e_rol", "Tu rol en la institución:").label}
+                      {getQ("q_1e_rol", "Tu rol en la institución:").label}{" "}
+                      <span className="text-red-600">*</span>
                     </label>
                     {renderFlexibleQuestionControl({
                       questionId: "q_1e_rol",
@@ -1367,7 +1374,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
         {currentSectionId === "S2A" && (
           <div className="space-y-4">
             <label className="block text-base font-bold text-slate-900">
-              1. {getQ("q_2a_tarea", "Tu tarea:").label}
+              1. {getQ("q_2a_tarea", "Tu tarea:").label}{" "}
+              <span className="text-red-600">*</span>
             </label>
             {renderFlexibleQuestionControl({
               questionId: "q_2a_tarea",
@@ -1395,7 +1403,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     "q_2b_tipo_hospital",
                     "Dependencia / Gestión del hospital:"
                   ).label
-                }
+                }{" "}
+                <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_2b_tipo_hospital",
@@ -1413,7 +1422,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
-                2. {getQ("q_2b_tarea", "Tu tarea:").label}
+                2. {getQ("q_2b_tarea", "Tu tarea:").label}{" "}
+                <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_2b_tarea",
@@ -1437,7 +1447,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     "q_2b_area_servicio",
                     "Área o servicio donde trabajás:"
                   ).label
-                }
+                }{" "}
+                <span className="text-red-600">*</span>
               </label>
               <p className="text-xs text-slate-500 mb-2">
                 Podés buscar en el listado básico de servicios o escribir libremente si el tuyo no está en la lista.
@@ -1460,7 +1471,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           <div className="space-y-6">
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
-                1. {getQ("q_2c_tipo_org", "Tipo de organización:").label}
+                1. {getQ("q_2c_tipo_org", "Tipo de organización:").label}{" "}
+              <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_2c_tipo_org",
@@ -1478,7 +1490,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
-                2. {getQ("q_2c_rol", "Tu rol:").label}
+                2. {getQ("q_2c_rol", "Tu rol:").label}{" "}
+              <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_2c_rol",
@@ -1501,7 +1514,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           <div className="space-y-6">
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
-                1. {getQ("q_2d_ambito", "Ámbito de gestión:").label}
+                1. {getQ("q_2d_ambito", "Ámbito de gestión:").label}{" "}
+              <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_2d_ambito",
@@ -1519,7 +1533,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
-                2. {getQ("q_2d_rol", "Tu función o rol:").label}
+                2. {getQ("q_2d_rol", "Tu función o rol:").label}{" "}
+              <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_2d_rol",
@@ -1543,7 +1558,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     "q_2d_area",
                     "Área, dirección, secretaría o Región Sanitaria donde desempeñás tu tarea:"
                   ).label
-                }
+                }{" "}
+                <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_2d_area",
@@ -1560,7 +1576,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
           <div className="space-y-6">
             <div>
               <label className="block text-base font-bold text-slate-900 mb-1">
-                1. {getQ("q_3_region", "Región sanitaria (I a XII):").label}
+                1. {getQ("q_3_region", "Región sanitaria (I a XII):").label}{" "}
+                <span className="text-red-600">*</span>
               </label>
               {regionLockedFromLink && (
                 <p className="text-xs text-[#567c7f] font-semibold mb-2">
@@ -1635,7 +1652,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                 2.{" "}
                 {regionSanitaria === REGION_NO_CALIFICA
                   ? "Localidad:"
-                  : getQ("q_3_municipio", "Municipio:").label}
+                  : getQ("q_3_municipio", "Municipio:").label}{" "}
+                <span className="text-red-600">*</span>
               </label>
               {regionSanitaria === REGION_NO_CALIFICA ? (
                 <input
@@ -1662,7 +1680,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
 
             <div>
               <label className="block text-base font-bold text-slate-900 mb-2.5">
-                3. {getQ("q_3_antiguedad", "Antigüedad en la tarea:").label}
+                3. {getQ("q_3_antiguedad", "Antigüedad en la tarea:").label}{" "}
+                <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_3_antiguedad",
@@ -1691,7 +1710,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     "q_4_priorities",
                     "Elegí las 5 temáticas que considerás prioritarias y ordenalas de 1.° (la más importante) a 5.°."
                   ).label
-                }
+                }{" "}
+                <span className="text-red-600">*</span>
               </label>
               <p className="text-xs text-slate-600 mb-3">
                 Seleccioná una temática por columna (del 1.° al 5.° lugar). Si querés sumar un eje no listado, usá el botón «+ Agregar otra temática» indicando título y descripción.
@@ -1742,7 +1762,7 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     <h3 className="text-base font-bold text-[#1f2f40]">
                       {item.num}. Sobre la temática que ubicaste en {item.rank}.° lugar{" "}
                       <span className="text-xs font-normal text-slate-500">
-                        (No bloqueante)
+                        (Opcional)
                       </span>
                     </h3>
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#567c7f] text-white">
@@ -1811,7 +1831,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     "q_4_relacion_zonal",
                     "¿Cómo describirías hoy la relación entre el centro de salud, el hospital y las organizaciones de tu zona?"
                   ).label
-                }
+                }{" "}
+                <span className="text-red-600">*</span>
               </label>
               {renderFlexibleQuestionControl({
                 questionId: "q_4_relacion_zonal",
@@ -1842,7 +1863,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                     "q_5_interesa_mesa",
                     "¿Te interesa integrar una mesa de trabajo?"
                   ).label
-                }
+                }{" "}
+                <span className="text-red-600">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
@@ -1879,7 +1901,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                         "q_5_tematicas_mesa",
                         "¿Sobre qué temáticas te gustaría trabajar?"
                       ).label
-                    }
+                    }{" "}
+                    <span className="text-red-600">*</span>
                   </label>
                   <p className="text-xs text-slate-500 mb-2.5">
                     Podés marcar varias temáticas.
@@ -1936,7 +1959,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                         "q_5_ofrece_referente",
                         "¿Te ofrecés como referente de mesa?"
                       ).label
-                    }
+                    }{" "}
+                    <span className="text-red-600">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-3 max-w-md">
                     {[
@@ -1970,7 +1994,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                         "q_5_horarios",
                         "Horarios posibles para los encuentros (podés marcar varios):"
                       ).label
-                    }
+                    }{" "}
+                    <span className="text-red-600">*</span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {[
@@ -2007,7 +2032,8 @@ export function SurveyWizard({ initialRegion }: SurveyWizardProps) {
                 {/* 5.5 Modalidad */}
                 <div>
                   <label className="block text-base font-bold text-slate-900 mb-2">
-                    5. {getQ("q_5_modalidad", "Modalidad preferida:").label}
+                    5. {getQ("q_5_modalidad", "Modalidad preferida:").label}{" "}
+                    <span className="text-red-600">*</span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {[

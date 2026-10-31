@@ -111,7 +111,7 @@ describe("Android Offline Store & Automatic Online Sync Engine (Phase 2 - S1, S2
       telefono: "11-2233-4455",
       regionSanitaria: "VI",
       municipio: "Lomas de Zamora",
-      tematicasInteres: ["Fuerza laboral", "Salud mental comunitaria"],
+      tematicasInteres: ["Fuerza de trabajo", "Salud mental comunitaria"],
       ofreceReferente: true,
     });
 
@@ -157,7 +157,7 @@ describe("Android pending contacts encrypted at rest (S8)", () => {
       email: "maria.segura@example.test",
       regionSanitaria: "I",
       municipio: "Bahía Blanca",
-      tematicasInteres: ["Fuerza laboral"],
+      tematicasInteres: ["Fuerza de trabajo"],
       ofreceReferente: false,
       comentarios: "Comentario privado S8",
     });
@@ -258,7 +258,7 @@ describe("Android pending contacts encrypted at rest (S8)", () => {
       telefono: "54-777-0003",
       regionSanitaria: "I",
       municipio: "Bahía Blanca",
-      tematicasInteres: ["Fuerza laboral"],
+      tematicasInteres: ["Fuerza de trabajo"],
     });
 
     // While pending, the contact lives in the secure adapter (one entry per contact)
@@ -310,7 +310,7 @@ describe("Android pending contacts encrypted at rest (S8)", () => {
       telefono: "54-777-0004",
       regionSanitaria: "I",
       municipio: "Bahía Blanca",
-      tematicasInteres: ["Fuerza laboral"],
+      tematicasInteres: ["Fuerza de trabajo"],
     });
     fetchMock.mockRejectedValueOnce(new Error("Offline"));
     await manager.saveAndTrySyncContact({

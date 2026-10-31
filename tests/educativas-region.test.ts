@@ -23,7 +23,7 @@ const common = {
   },
   section4: {
     priorities: [
-      { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza laboral" },
+      { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza de trabajo" },
       { rank: 2, themeId: "financiamiento", themeLabel: "Financiamiento" },
       { rank: 3, themeId: "salud_mental", themeLabel: "Salud mental comunitaria" },
       { rank: 4, themeId: "salud_educacion", themeLabel: "Salud y educación" },

@@ -7,7 +7,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
-    "build:apk": "eas build -p android --profile preview"
+    "build:apk": "eas build -p android --profile preview",
+    "build:play": "eas build -p android --profile production"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

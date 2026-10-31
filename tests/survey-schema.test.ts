@@ -51,7 +51,7 @@ describe("Default Survey Schema & 13 Themes (S3, S4, S5, S6, S7, S8)", () => {
   it("defines the 13 initial themes (11 original + 2 accepted additions)", () => {
     expect(DEFAULT_THEMES).toHaveLength(13);
     const labels = DEFAULT_THEMES.map((t) => t.label);
-    expect(labels).toContain("Fuerza laboral");
+    expect(labels).toContain("Fuerza de trabajo");
     expect(labels).toContain("Financiamiento");
     expect(labels).toContain("Abordajes territoriales");
     expect(labels).toContain("Redes integradas y articulación");
@@ -112,7 +112,7 @@ describe("Survey Submission Validation Rules (S3-S8)", () => {
     },
     section4: {
       priorities: [
-        { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza laboral" },
+        { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza de trabajo" },
         { rank: 2, themeId: "financiamiento", themeLabel: "Financiamiento" },
         { rank: 3, themeId: "salud_mental", themeLabel: "Salud mental comunitaria" },
         { rank: 4, themeId: "abordajes_territoriales", themeLabel: "Abordajes territoriales" },
@@ -169,8 +169,8 @@ describe("Survey Submission Validation Rules (S3-S8)", () => {
       section4: {
         ...baseValidSubmission.section4,
         priorities: [
-          { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza laboral" },
-          { rank: 2, themeId: "fuerza_laboral", themeLabel: "Fuerza laboral" },
+          { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza de trabajo" },
+          { rank: 2, themeId: "fuerza_laboral", themeLabel: "Fuerza de trabajo" },
           { rank: 3, themeId: "salud_mental", themeLabel: "Salud mental comunitaria" },
           { rank: 4, themeId: "abordajes_territoriales", themeLabel: "Abordajes territoriales" },
           { rank: 5, themeId: "agroecologia", themeLabel: "Agroecología" },

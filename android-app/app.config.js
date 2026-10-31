@@ -43,7 +43,7 @@ module.exports = {
   expo: {
     name: "MOSAPRO Relevamiento",
     slug: "mosapro-relevamiento",
-    version: "1.0.0",
+    version: "1.1.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
@@ -61,7 +61,7 @@ module.exports = {
     owner: "enthalpydev",
     android: {
       package: "ar.com.mosapro.relevamiento",
-      versionCode: 1,
+      versionCode: 2,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#567c7f",

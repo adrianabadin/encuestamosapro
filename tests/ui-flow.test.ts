@@ -52,11 +52,11 @@ describe("Survey UI Flow & Regional Prefill Helpers (S3, S4, S5, S6, S7, S8)", (
 
   it("resolves dynamic theme labels for 1.°, 2.° and 3.° place in Section 4.2-4.4 (S7)", () => {
     const priorities = [
-      { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza laboral" },
+      { rank: 1, themeId: "fuerza_laboral", themeLabel: "Fuerza de trabajo" },
       { rank: 2, themeId: "custom_1", themeLabel: "Salud ambiental" },
       { rank: 3, themeId: "agroecologia", themeLabel: "Agroecología" },
     ];
-    expect(getRankThemeLabel(priorities, 1)).toBe("Fuerza laboral");
+    expect(getRankThemeLabel(priorities, 1)).toBe("Fuerza de trabajo");
     expect(getRankThemeLabel(priorities, 2)).toBe("Salud ambiental");
     expect(getRankThemeLabel(priorities, 3)).toBe("Agroecología");
     expect(getRankThemeLabel(priorities, 4)).toBe("Pendiente de elegir");

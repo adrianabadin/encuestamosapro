@@ -706,6 +706,9 @@ export function SurveyScreen({
           </Pressable>
         </View>
         <Text style={styles.sectionTitle}>{currentSection?.title}</Text>
+        <Text style={styles.helperNote}>
+          Los campos marcados con * son obligatorios.
+        </Text>
       </View>
 
       {stepErrors.length > 0 && (
@@ -771,7 +774,7 @@ export function SurveyScreen({
         {currentSectionId === "S1" && (
           <View style={styles.fieldGroup}>
             <Text style={styles.questionLabel}>
-              ¿Dónde realizás tu tarea principal?
+              ¿Dónde realizás tu tarea principal? *
             </Text>
             {[
               {
@@ -837,7 +840,7 @@ export function SurveyScreen({
             {mainLocation === "institucion_educativa" && (
               <View style={styles.cascadeBox}>
                 <Text style={styles.questionLabel}>
-                  {getQ("q_1e_nivel", "Nivel educativo:").label}
+                  {getQ("q_1e_nivel", "Nivel educativo:").label}{" *"}
                 </Text>
                 <View style={styles.chipsWrap}>
                   {eduOptions("q_1e_nivel").map((opt) => {
@@ -869,7 +872,7 @@ export function SurveyScreen({
                       {
                         getQ("q_1e_jurisdiccion", "Jurisdicción de la institución:")
                           .label
-                      }
+                      }{" *"}
                     </Text>
                     <View style={styles.chipsWrap}>
                       {eduOptions("q_1e_jurisdiccion").map((opt) => {
@@ -901,7 +904,7 @@ export function SurveyScreen({
                 {eduNivel && eduJurisdiccion ? (
                   <>
                     <Text style={styles.questionLabel}>
-                      {getQ("q_1e_rol", "Tu rol en la institución:").label}
+                      {getQ("q_1e_rol", "Tu rol en la institución:").label}{" *"}
                     </Text>
                     {eduOptions("q_1e_rol").map((opt) => {
                       const active = eduRol === opt.value;
@@ -941,7 +944,7 @@ export function SurveyScreen({
         {/* S2A Primer Nivel */}
         {currentSectionId === "S2A" && (
           <View style={styles.fieldGroup}>
-            <Text style={styles.questionLabel}>1. Tu tarea:</Text>
+            <Text style={styles.questionLabel}>1. Tu tarea: *</Text>
             {(
               getQ("q_2a_tarea", "Tu tarea:").options ||
               DEFAULT_SURVEY_SCHEMA.sections[2].questions[0].options!
@@ -979,7 +982,7 @@ export function SurveyScreen({
         {currentSectionId === "S2B" && (
           <View style={styles.fieldGroup}>
             <Text style={styles.questionLabel}>
-              1. Dependencia / Gestión del hospital:
+              1. Dependencia / Gestión del hospital: *
             </Text>
             {[
               { value: "nacional", label: "Gestión Nacional" },
@@ -1006,7 +1009,7 @@ export function SurveyScreen({
             })}
 
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
-              2. Tu tarea:
+              2. Tu tarea: *
             </Text>
             {(
               getQ("q_2b_tarea", "Tu tarea:").options ||
@@ -1040,7 +1043,7 @@ export function SurveyScreen({
             )}
 
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
-              3. Área o servicio donde trabajás (filtrá de la lista o escribí libremente):
+              3. Área o servicio donde trabajás (filtrá de la lista o escribí libremente): *
             </Text>
             <TextInput
               value={s2bAreaServicio}
@@ -1072,7 +1075,7 @@ export function SurveyScreen({
         {/* S2C Comunitario */}
         {currentSectionId === "S2C" && (
           <View style={styles.fieldGroup}>
-            <Text style={styles.questionLabel}>1. Tipo de organización:</Text>
+            <Text style={styles.questionLabel}>1. Tipo de organización: *</Text>
             {(
               getQ("q_2c_tipo_org", "").options ||
               DEFAULT_SURVEY_SCHEMA.sections[4].questions[0].options!
@@ -1105,7 +1108,7 @@ export function SurveyScreen({
             )}
 
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
-              2. Tu rol:
+              2. Tu rol: *
             </Text>
             {(
               getQ("q_2c_rol", "").options ||
@@ -1143,7 +1146,7 @@ export function SurveyScreen({
         {/* S2D Gestión Sanitaria */}
         {currentSectionId === "S2D" && (
           <View style={styles.fieldGroup}>
-            <Text style={styles.questionLabel}>1. Ámbito de gestión:</Text>
+            <Text style={styles.questionLabel}>1. Ámbito de gestión: *</Text>
             {[
               { value: "nacional", label: "Gestión Nacional" },
               { value: "provincial", label: "Gestión Provincial" },
@@ -1169,7 +1172,7 @@ export function SurveyScreen({
             })}
 
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
-              2. Tu función o rol:
+              2. Tu función o rol: *
             </Text>
             {[
               {
@@ -1218,7 +1221,7 @@ export function SurveyScreen({
             )}
 
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
-              3. Área, dirección, secretaría o Región Sanitaria:
+              3. Área, dirección, secretaría o Región Sanitaria: *
             </Text>
             <TextInput
               value={s2dArea}
@@ -1233,7 +1236,7 @@ export function SurveyScreen({
         {currentSectionId === "S3" && (
           <View style={styles.fieldGroup}>
             <Text style={styles.questionLabel}>
-              1. Región Sanitaria (I a XII):
+              1. Región Sanitaria (I a XII): *
             </Text>
             <Text style={styles.helperNote}>
               Tocá una región para ver qué municipios le corresponden.
@@ -1291,7 +1294,7 @@ export function SurveyScreen({
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
               {regionSanitaria === REGION_NO_CALIFICA
                 ? "2. Localidad:"
-                : "2. Municipio (135 municipios PBA):"}
+                : "2. Municipio (135 municipios PBA):"}{" *"}
             </Text>
             <TextInput
               value={municipioSearch}
@@ -1334,7 +1337,7 @@ export function SurveyScreen({
             </View>
 
             <Text style={[styles.questionLabel, { marginTop: 12 }]}>
-              3. Antigüedad en la tarea:
+              3. Antigüedad en la tarea: *
             </Text>
             {[
               { value: "menos_de_5", label: "Menos de 5 años" },
@@ -1367,7 +1370,7 @@ export function SurveyScreen({
         {currentSectionId === "S4" && (
           <View style={styles.fieldGroup}>
             <Text style={styles.questionLabel}>
-              1. Elegí 5 temáticas prioritarias y ordenalas de 1.° a 5.° ({priorities.length}/5):
+              1. Elegí 5 temáticas prioritarias y ordenalas de 1.° a 5.° ({priorities.length}/5): *
             </Text>
 
             {allThemeRows.map((row) => {
@@ -1484,7 +1487,7 @@ export function SurveyScreen({
               return (
                 <View key={item.rank} style={styles.detailCard}>
                   <Text style={styles.questionLabel}>
-                    Sobre tu {item.rank}.° prioridad ({label}) — No bloqueante:
+                    Sobre tu {item.rank}.° prioridad ({label}) — Opcional:
                   </Text>
                   <TextInput
                     value={item.prob}
@@ -1516,7 +1519,7 @@ export function SurveyScreen({
             />
 
             <Text style={styles.questionLabel}>
-              6. ¿Cómo describirías hoy la relación entre el centro de salud, el hospital y las organizaciones de tu zona?
+              6. ¿Cómo describirías hoy la relación entre el centro de salud, el hospital y las organizaciones de tu zona? *
             </Text>
             {[
               { value: "muy_buena", label: "Muy buena" },
@@ -1550,7 +1553,7 @@ export function SurveyScreen({
         {currentSectionId === "S5" && (
           <View style={styles.fieldGroup}>
             <Text style={styles.questionLabel}>
-              1. ¿Te interesa integrar una mesa de trabajo?
+              1. ¿Te interesa integrar una mesa de trabajo? *
             </Text>
             {[
               { value: "si", label: "Sí" },
@@ -1581,7 +1584,7 @@ export function SurveyScreen({
             {(interesaMesa === "si" || interesaMesa === "tal_vez") && (
               <View style={styles.fieldGroup}>
                 <Text style={styles.questionLabel}>
-                  2. ¿Sobre qué temáticas te gustaría trabajar? (marcá varias):
+                  2. ¿Sobre qué temáticas te gustaría trabajar? (marcá varias): *
                 </Text>
                 {allThemeRows.map((th) => {
                   const checked = tematicasMesa.includes(th.id);
@@ -1614,7 +1617,7 @@ export function SurveyScreen({
                 })}
 
                 <Text style={styles.questionLabel}>
-                  3. ¿Te ofrecés como referente de mesa?
+                  3. ¿Te ofrecés como referente de mesa? *
                 </Text>
                 {[
                   { value: "si", label: "Sí" },
@@ -1645,7 +1648,7 @@ export function SurveyScreen({
                 })}
 
                 <Text style={styles.questionLabel}>
-                  4. Horarios posibles (marcá varios):
+                  4. Horarios posibles (marcá varios): *
                 </Text>
                 <View style={styles.chipsWrap}>
                   {[
@@ -1680,7 +1683,7 @@ export function SurveyScreen({
                   })}
                 </View>
 
-                <Text style={styles.questionLabel}>5. Modalidad preferida:</Text>
+                <Text style={styles.questionLabel}>5. Modalidad preferida: *</Text>
                 {[
                   { value: "virtual", label: "Virtual" },
                   { value: "presencial", label: "Presencial" },

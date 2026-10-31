@@ -89,7 +89,7 @@ export interface SurveySchema {
 }
 
 export const DEFAULT_THEMES: SurveyTheme[] = [
-  { id: "fuerza_laboral", label: "Fuerza laboral", order: 1, active: true },
+  { id: "fuerza_laboral", label: "Fuerza de trabajo", order: 1, active: true },
   { id: "financiamiento", label: "Financiamiento", order: 2, active: true },
   {
     id: "abordajes_territoriales",
